@@ -6,8 +6,12 @@ namespace Game
 {
     public class TrailGenerate : MonoBehaviour
     {
+        public bool UseJobify;
         public Camera Camera;
+        [Header("原始")]
         public GameObject TrailPrefab;
+        [Header("Job化")]
+        public GameObject TrailJobPrefab;
         public int GenerateCount;
         //public float intervalTime = 10f;
         public float ClipPlane;
@@ -21,9 +25,6 @@ namespace Game
             this.PosArray[0] = Camera.ScreenToWorldPoint(new Vector3(0, 0, ClipPlane));
             this.PosArray[1] = Camera.ScreenToWorldPoint(new Vector3(Screen.width, Screen.height, ClipPlane));
 
-
-
-
             this.TrailList = new List<GameObject>();
         }
 
@@ -31,13 +32,12 @@ namespace Game
         {
             for (int i = 0; i < GenerateCount; i++)
             {
-                GameObject obj = GameObject.Instantiate(this.TrailPrefab, new Vector3(Random.Range(this.PosArray[0].x, this.PosArray[1].x), Random.Range(this.PosArray[0].y, this.PosArray[1].y), 0), Quaternion.identity);
-                obj.transform.localPosition = Vector3.zero;
+                GameObject obj = GameObject.Instantiate(this.UseJobify ? this.TrailJobPrefab : this.TrailPrefab, new Vector3(Random.Range(this.PosArray[0].x, this.PosArray[1].x), Random.Range(this.PosArray[0].y, this.PosArray[1].y), 0), Quaternion.identity);
+                //obj.transform.localPosition = Vector3.zero;
                 obj.transform.SetParent(this.transform);
                 obj.SetActive(true);
                 this.TrailList.Add(obj);
             }
-            //StartCoroutine(this.WaitThenChangePos(intervalTime));
         }
 
         private void Update()
@@ -48,17 +48,5 @@ namespace Game
                 item.transform.Translate(dir * Random.Range(1, 10) * this.Speed * Time.deltaTime);
             }
         }
-
-        //private IEnumerator WaitThenChangePos(float nIntervalTime)
-        //{
-        //    while (true)
-        //    {
-        //        yield return new WaitForSeconds(nIntervalTime);
-        //        foreach (var item in this.TrailList)
-        //        {
-        //            item.transform.localPosition = this.PosArray[Random.Range(0, 3)];
-        //        }
-        //    }
-        //}
     }
 }
