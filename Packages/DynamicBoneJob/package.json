@@ -1,0 +1,33 @@
+{
+    "name": "com.lmdgame.groundzero.dynamicbonejob",
+    "version": "1.0.0",
+    "displayName": "DynamicBoneJob",
+    "description": "This is an DynamicBoneJob package",
+    "unity": "2019.4",
+    "unityRelease": "3f1",
+    "documentationUrl": "",
+    "changelogUrl": "",
+    "licensesUrl": "",
+    "dependencies": {
+        "com.unity.burst": "1.4.2",
+        "com.unity.collections": "0.9.0-preview.6",
+        "com.unity.mathematics": "1.2.1"
+    },
+    "keywords": [
+        "DynamicBone",
+        "Job",
+        "DynamicBoneJob"
+    ],
+    "author": {
+        "name": "example",
+        "email": "example@example.com",
+        "url": "https://www.example.com"
+    },
+    "samples": [
+      {
+        "displayName": "DynamicBoneJob Sample",
+        "description": "Import DynamicBoneJobSample.unitypackage to see basic setup and usage of DynamicBoneJob.",
+        "path": "Samples~/DynamicBoneJobSample"
+      }
+    ]
+}

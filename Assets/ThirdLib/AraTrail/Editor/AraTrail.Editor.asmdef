@@ -1,0 +1,17 @@
+{
+    "name": "AraTrail.Editor",
+    "references": [
+        "GUID:d79526d93b548434eb0738a5247325ed"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

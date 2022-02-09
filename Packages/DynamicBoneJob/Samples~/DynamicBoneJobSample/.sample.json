@@ -1,0 +1,5 @@
+{
+	"displayName":"DynamicBoneJob Sample",
+	"description": "Import DynamicBoneJobSamples.unitypackage to see basic setup and usage of DynamicBoneJob.",
+	"createSeparatePackage": false
+}
