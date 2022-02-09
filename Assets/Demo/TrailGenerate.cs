@@ -32,6 +32,7 @@ namespace Game
             for (int i = 0; i < GenerateCount; i++)
             {
                 GameObject obj = GameObject.Instantiate(this.TrailPrefab, new Vector3(Random.Range(this.PosArray[0].x, this.PosArray[1].x), Random.Range(this.PosArray[0].y, this.PosArray[1].y), 0), Quaternion.identity);
+                obj.transform.localPosition = Vector3.zero;
                 obj.transform.SetParent(this.transform);
                 obj.SetActive(true);
                 this.TrailList.Add(obj);
