@@ -1,95 +1,20 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
+using Unity.Jobs;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 using UnityEngine;
-
-/**
- * Ara is a trail renderer for Unity, meant to replace and extend the standard TrailRenderer.
- */
+using Unity.Burst;
+using UnityEngine.Jobs;
 
 namespace AraJob
 {
 
     [ExecuteInEditMode]
-    public class AraTrailJob : MonoBehaviour
+    public class AraTrailJob_Backup : MonoBehaviour
     {
-
-        //public struct Head
-        //{
-        //    public AraTrailJob AraTrailJob;
-        //}
-
-        
-        public struct Head
-        {
-            public bool baseOnSceneViewCamera;
-            public Space space;
-            public Timescale timescale;
-            public TrailAlignment alignment;
-            public float thickness;
-            public int smoothness;
-            public bool highQualityCorners;
-            public int cornerRoundness;
-            public AnimationCurve thicknessOverLenght;
-            public Gradient colorOverLenght;
-            public AnimationCurve thicknessOverTime;
-            public Gradient colorOverTime;
-            public bool emit;
-            public float initialThickness;
-            public Color initialColor;
-            public Vector3 initialVelocity;
-            public float timeInterval;
-            public float minDistance;
-            public float time;
-            public bool enablePhysics;
-            public float warmup;
-            public Vector3 gravity;
-            public float inertia;
-            public float velocitySmoothing;
-            public float damping;
-            public Material[] materials;
-            public UnityEngine.Rendering.ShadowCastingMode castShadows;
-            public bool receiveShadows;
-            public bool useLightProbes;
-            public TextureMode textureMode;
-            public float uvFactor;
-            public float tileAnchor;
-            public float uvFlowX;
-            public float uvFlowY;
-            //public event System.Action onUpdatePoints;
-            //public Camera curCamera;
-
-            public Vector3 curCameraPosition;
-
-
-            public List<Point> points;
-            //private List<Point> renderablePoints = new List<Point>();
-            //private List<int> discontinuities = new List<int>();
-
-            //private Mesh mesh_;
-            //private Vector3 velocity = Vector3.zero;
-            //private Vector3 prevPosition;
-            //private float speed = 0;
-            //private float accumTime = 0;
-
-            //private List<Vector3> vertices = new List<Vector3>();
-            //private List<Vector3> normals = new List<Vector3>();
-            //private List<Vector4> tangents = new List<Vector4>();
-            //private List<Vector2> uvs = new List<Vector2>();
-            //private List<Color> vertColors = new List<Color>();
-            //private List<int> tris = new List<int>();
-        }
-        
-
-
-
-
-
-
-
 
         public const float epsilon = 0.00001f;
 
@@ -112,11 +37,13 @@ namespace AraJob
             Tile
         }
 
-        /**
-         * Spatial frame, consisting of a point an three axis. This is used to implement the parallel transport method 
-         * along the curve defined by the trail points. Using this instead of a Frenet-esque method avoids flipped frames
-         * at points where the curvature changes.
-         */
+
+
+        /// <summary>
+        /// Spatial frame, consisting of a point an three axis. This is used to implement the parallel transport method 
+        /// along the curve defined by the trail points.Using this instead of a Frenet-esque method avoids flipped frames
+        /// at points where the curvature changes.
+        /// </summary>
         public struct CurveFrame
         {
 
@@ -158,10 +85,11 @@ namespace AraJob
             }
         }
 
-        /**
-         * Holds information for each point in a trail: position, velocity and remaining lifetime. Points
-         * can be added or subtracted, and interpolated using Catmull-Rom spline interpolation.
-         */
+        /// <summary>
+        /// Holds information for each point in a trail: position, velocity and remaining lifetime. Points
+        /// can be added or subtracted, and interpolated using Catmull-Rom spline interpolation.
+        /// </summary>
+        [System.Serializable]
         public struct Point
         {
 
@@ -272,6 +200,9 @@ namespace AraJob
             }
         }
 
+
+        #region Properties
+
         [Header("Overall")]
 
         [Tooltip("是否以sceneview的camera基础构建")]
@@ -366,8 +297,14 @@ namespace AraJob
         public event System.Action onUpdatePoints;
 
         public Camera curCamera;
+        [HideInInspector]
+        public List<Point> points = new List<Point>();
 
-        [HideInInspector] public List<Point> points = new List<Point>();
+
+
+        #endregion
+
+
         private List<Point> renderablePoints = new List<Point>();
         private List<int> discontinuities = new List<int>();
 
@@ -400,37 +337,124 @@ namespace AraJob
             get { return mesh_; }
         }
 
-        public void OnValidate()
-        {
-            time = Mathf.Max(time, epsilon);
-            warmup = Mathf.Max(0, warmup);
-        }
+
+
+
+        #region Unity Mono
 
         public void Awake()
         {
+            this.InitJobifyVariables();
             Warmup();
         }
 
-        private void OnPreCull()
+        void OnEnable()
         {
+            points.Clear();
+            // initialize previous position, for correct velocity estimation in the first frame:
+            prevPosition = transform.position;
+            velocity = Vector3.zero;
 
+            // create a new mesh for the trail:
+            mesh_ = new Mesh();
+            mesh_.name = "ara_trail_mesh";
+            mesh_.MarkDynamic();
         }
 
-        /*
 
         private void Update()
         {
 
-            UpdateVelocity();
+            //UpdateVelocity();
 
-            EmissionStep(DeltaTime);
+            //EmissionStep(DeltaTime);
 
-            SnapLastPointToTransform();
+            //SnapLastPointToTransform();
 
-            UpdatePointsLifecycle();
+            //UpdatePointsLifecycle();
 
-            if (onUpdatePoints != null)
-                onUpdatePoints();
+            //if (onUpdatePoints != null)
+            //    onUpdatePoints();
+
+            //UpdateVelocity();
+            UpdateVelocityJob updateVelocityJob = new UpdateVelocityJob
+            {
+                position = this.transform.position,
+                prevPosition = this.prevPosition,
+                DeltaTime = this.DeltaTime,
+                velocity = this.velocity,
+                speed = this.speed,
+                velocitySmoothing = this.velocitySmoothing
+            };
+
+            updateVelocityJob.Schedule().Complete();
+
+            this.velocity = updateVelocityJob.velocity;
+            this.speed = updateVelocityJob.speed;
+            this.prevPosition = updateVelocityJob.position;
+
+
+            //EmissionStep(DeltaTime);
+            NativeList<Point> rPoint = new NativeList<Point>();
+            for (int i = 0; i < this.points.Count; i++)
+            {
+                rPoint.Add(this.points[i]);
+            }
+
+            EmissionStepJob emissionStepJob = new EmissionStepJob
+            {
+                accumTime = this.accumTime,
+                time = this.time,
+                timeInterval = this.timeInterval,
+                emit = this.emit,
+                space = this.space,
+                localPosition = this.transform.localPosition,
+                position = this.transform.position,
+                minDistance = this.minDistance,
+                points = rPoint,
+                initialVelocity = this.initialVelocity,
+                inertia = this.inertia,
+                tangent = this.transform.right,
+                normal = this.transform.forward,
+                initialColor = this.initialColor,
+                initialThickness = this.initialThickness
+            };
+
+            emissionStepJob.Schedule().Complete();
+
+            this.points.Clear();
+            for (int i = 0; i < emissionStepJob.points.Length; i++)
+            {
+                this.points.Add(emissionStepJob.points[i]);
+            }
+
+
+
+            NativeList<Point> pointList = new NativeList<Point>();
+
+            for (int i = 0; i < this.points.Count; i++)
+            {
+                pointList.Add(this.points[i]);
+            }
+
+
+            UpdatePointsLifecycleJob physicsStepJob = new UpdatePointsLifecycleJob
+            {
+                PointList = pointList,
+                DeltaTime = this.DeltaTime,
+                smoothness = this.smoothness
+            };
+
+            this.mUpdateJobHandle = physicsStepJob.Schedule(pointList.Length, DESIRED_JOB_SIZE);
+            this.mUpdateJobHandle.Complete();
+
+            for (int i = 0; i < this.points.Count; i++)
+            {
+                this.points[i] = pointList[i];
+            }
+
+
+
         }
 
 
@@ -440,7 +464,38 @@ namespace AraJob
             if (!enablePhysics)
                 return;
 
-            PhysicsStep(FixedDeltaTime);
+            //PhysicsStep(FixedDeltaTime);
+
+            //if (!this.mFixUpdateJobHandle.IsCompleted)
+            //{
+            //    return;
+            //}
+            //this.mFixUpdateJobHandle.Complete();
+
+            NativeList<Point> pointList = new NativeList<Point>();
+
+            for (int i = 0; i < this.points.Count; i++)
+            {
+                pointList.Add(this.points[i]);
+            }
+            
+
+            PhysicsStepJob physicsStepJob = new PhysicsStepJob
+            {
+                PointList = pointList,
+                gravity = this.gravity,
+                velocity_scale = Mathf.Pow(1 - Mathf.Clamp01(damping), FixedDeltaTime),
+                timestep = FixedDeltaTime
+            };
+
+            this.mFixUpdateJobHandle = physicsStepJob.Schedule(pointList.Length, DESIRED_JOB_SIZE);
+            this.mFixUpdateJobHandle.Complete();
+
+            for (int i = 0; i < this.points.Count; i++)
+            {
+                this.points[i] = pointList[i];
+            }
+
         }
 
         private void LateUpdate()
@@ -465,50 +520,40 @@ namespace AraJob
                 UpdateTrailMesh(Camera.main);
 #endif
         }
-        */
 
-        void OnEnable()
-        {
-
-            points.Clear();
-            // initialize previous position, for correct velocity estimation in the first frame:
-            prevPosition = transform.position;
-            velocity = Vector3.zero;
-
-            // create a new mesh for the trail:
-            mesh_ = new Mesh();
-            mesh_.name = "ara_trail_mesh";
-            mesh_.MarkDynamic();
-
-            // subscribe to OnPreCull for all cameras.
-            //Camera.onPreCull += UpdateTrailMesh;
-
-            AraTrailJobMgr.Instance.OnEnter(this);
-        }
 
         void OnDisable()
         {
-
             points.Clear();
             // destroy both the trail mesh and the hidden renderer object:
             DestroyImmediate(mesh_);
-
             DestoryTrailGoc();
-
-            // unsubscribe from OnPreCull.
-            //Camera.onPreCull -= UpdateTrailMesh;
-            AraTrailJobMgr.Instance.OnExit(this);
         }
 
         private void OnDestroy()
         {
             DestoryTrailGoc();
+            this.ClearJobifyVariables();
         }
 
 
-        /**
-         * Removes all points in the trail, effectively removing any rendered trail segments.
-         */
+        public void OnValidate()
+        {
+            time = Mathf.Max(time, epsilon);
+            warmup = Mathf.Max(0, warmup);
+        }
+
+
+        #endregion
+
+
+
+
+        #region Origin Methods
+
+        /// <summary>
+        /// Removes all points in the trail, effectively removing any rendered trail segments.
+        /// </summary>
         public void Clear()
         {
             points.Clear();
@@ -527,23 +572,18 @@ namespace AraJob
         }
 
 
-
         private void EmissionStep(float time)
         {
-
             // Acumulate the amount of time passed:
             accumTime += time;
 
             // If enough time has passed since the last emission (>= timeInterval), consider emitting new points.
             if (accumTime >= timeInterval)
             {
-
                 if (emit)
                 {
-
                     // Select the emission position, depending on the simulation space:
                     Vector3 position = space == Space.Self ? transform.localPosition : transform.position;
-
                     // If there's at least 1 point and it is not far enough from the current position, don't spawn any new points this frame.
                     if (points.Count <= 1 || Vector3.Distance(position, points[points.Count - 2].position) >= minDistance)
                     {
@@ -555,9 +595,8 @@ namespace AraJob
 
         }
 
-        public void Warmup()
+        private void Warmup()
         {
-
             if (!Application.isPlaying || !enablePhysics)
                 return;
 
@@ -602,19 +641,22 @@ namespace AraJob
             }
         }
 
-   
 
-        /**
-         * Spawns a new point in the trail.
-         */
+
+
+        /// <summary>
+        /// Spawns a new point in the trail.
+        /// </summary>
+        /// <param name="position"></param>
         public void EmitPoint(Vector3 position)
         {
             points.Add(new Point(position, initialVelocity + velocity * inertia, transform.right, transform.forward, initialColor, initialThickness, time));
         }
 
-        /**
-         * Makes sure the first point is always at the transform's center, and that its orientation matches it.
-         */
+
+        /// <summary>
+        /// Makes sure the first point is always at the transform's center, and that its orientation matches it.
+        /// </summary>
         private void SnapLastPointToTransform()
         {
 
@@ -640,9 +682,9 @@ namespace AraJob
             }
         }
 
-        /**
-         * Updated trail lifetime and removes dead points.
-         */
+        /// <summary>
+        /// Updated trail lifetime and removes dead points.
+        /// </summary>
         private void UpdatePointsLifecycle()
         {
 
@@ -655,7 +697,6 @@ namespace AraJob
 
                 if (point.life <= 0)
                 {
-
                     // Unsmoothed trails delete points as soon as they die.
                     if (smoothness <= 1)
                     {
@@ -673,9 +714,9 @@ namespace AraJob
             }
         }
 
-        /**
-         * Clears all mesh data: vertices, normals, tangents, etc. This is called at the beginning of UpdateTrailMesh().
-         */
+        /// <summary>
+        /// Clears all mesh data: vertices, normals, tangents, etc. This is called at the beginning of UpdateTrailMesh().
+        /// </summary>
         private void ClearMeshData()
         {
 
@@ -689,9 +730,9 @@ namespace AraJob
 
         }
 
-        /**
-         * Applies vertex, normal, tangent, etc. data to the mesh. Called at the end of UpdateTrailMesh()
-         */
+        /// <summary>
+        /// Applies vertex, normal, tangent, etc. data to the mesh. Called at the end of UpdateTrailMesh()
+        /// </summary>
         private void CommitMeshData()
         {
 
@@ -713,18 +754,15 @@ namespace AraJob
             else
                 return true;
         }
-
+         
         protected GameObject m_TrailGoc = null;
 
-        /** 
-         * Asks Unity to render the trail mesh.
-         */
+        /// <summary>
+        /// Asks Unity to render the trail mesh.
+        /// </summary>
+        /// <param name="cam"></param>
         private void RenderMesh(Camera cam)
         {
-
-            //renderer.sharedMaterials[i].EnableKeyword("_UV_FLOW_ON");
-            //renderer.sharedMaterials[i].SetVector("_UVFlow", new Vector4(uvFlowX, uvFlowY, 0, 0));
-
             for (int i = 0; i < materials.Length; ++i)
             {
                 if (materials[i] == null)
@@ -736,68 +774,6 @@ namespace AraJob
                 Graphics.DrawMesh(mesh_, space == Space.Self && transform.parent != null ? transform.parent.localToWorldMatrix : Matrix4x4.identity,
                                   materials[i], gameObject.layer, cam, 0, null, castShadows, receiveShadows, null, useLightProbes);
             }
-
-            //return;
-
-            /*MeshRenderer renderer = null;
-            MeshFilter meshFilter = null;
-            if (m_TrailGoc == null)
-            {
-                m_TrailGoc = new GameObject();
-                m_TrailGoc.name = "AreTrail " + transform.name;
-                meshFilter = m_TrailGoc.AddComponent<MeshFilter>();
-                renderer = m_TrailGoc.AddComponent<MeshRenderer>();
-            }
-            else
-            {
-                meshFilter = m_TrailGoc.GetComponent<MeshFilter>();
-                renderer = m_TrailGoc.GetComponent<MeshRenderer>();
-            }
-
-            bool needReSetMaterials = false;
-            if(renderer.sharedMaterials.Length != materials.Length)
-                needReSetMaterials = true;
-            else
-            {
-                for (int i = 0; i < materials.Length; i++) 
-                {
-                    if (renderer.sharedMaterials[i] == null || materials[i] == null || 
-                        !IsSameMaterial(renderer.sharedMaterials[i], materials[i])) 
-                    {
-                        needReSetMaterials = true;
-                        break;
-                    }
-                }
-            }
-
-            meshFilter.mesh = mesh_;
-
-            if (needReSetMaterials)
-                renderer.sharedMaterials = materials;
-
-            for (int i = 0; i < renderer.sharedMaterials.Length; i++)
-            {
-                renderer.sharedMaterials[i].EnableKeyword("_UV_FLOW_ON");
-                renderer.sharedMaterials[i].SetVector("_UVFlow", new Vector4(uvFlowX, uvFlowY, 0, 0));
-            }
-
-            m_TrailGoc.transform.localPosition = Vector3.zero;
-            m_TrailGoc.transform.localRotation = Quaternion.identity;
-            m_TrailGoc.transform.localScale = Vector3.one;
-
-            if (space == Space.Self && transform.parent != null)
-            {
-                m_TrailGoc.transform.parent = transform.parent;
-            }
-            else
-            {
-                m_TrailGoc.transform.parent = null;
-            }
-
-            renderer.lightProbeUsage = useLightProbes ? UnityEngine.Rendering.LightProbeUsage.BlendProbes : UnityEngine.Rendering.LightProbeUsage.Off;
-            renderer.shadowCastingMode = castShadows;
-            renderer.receiveShadows = receiveShadows;
-            m_TrailGoc.layer = gameObject.layer;*/
         }
 
         protected void DestoryTrailGoc()
@@ -809,9 +785,11 @@ namespace AraJob
             }
         }
 
-        /** 
-         * Calculates the lenght of a trail segment.
-         */
+        /// <summary>
+        /// Calculates the lenght of a trail segment.
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
         public float GetLenght(List<Point> input)
         {
 
@@ -866,9 +844,13 @@ namespace AraJob
             return renderablePoints;
         }
 
-        /**
-         * Initializes the frame used to generate the locally aligned trail mesh.
-         */
+
+        /// <summary>
+        /// Initializes the frame used to generate the locally aligned trail mesh.
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="nextPoint"></param>
+        /// <returns></returns>
         private CurveFrame InitializeCurveFrame(Vector3 point, Vector3 nextPoint)
         {
 
@@ -885,9 +867,10 @@ namespace AraJob
             return new CurveFrame(point, transform.forward, transform.up, tangent);
         }
 
-        /**
-         * Updates the trail mesh to be seen from the camera passed to the function.
-         */
+        /// <summary>
+        ///  Updates the trail mesh to be seen from the camera passed to the function.
+        /// </summary>
+        /// <param name="cam"></param>
         private void UpdateTrailMesh(Camera cam)
         {
 
@@ -918,9 +901,13 @@ namespace AraJob
             }
         }
 
-        /**
-         * Updates mesh for one trail segment:
-         */
+        /// <summary>
+        /// Updates mesh for one trail segment:
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <param name="localCamPosition"></param>
         private void UpdateSegmentMesh(List<Point> input, int start, int end, Vector3 localCamPosition)
         {
 
@@ -1122,56 +1109,231 @@ namespace AraJob
             }
 
         }
-   
-    
-    
-        public void FrameUpdate()
+
+
+        #endregion
+
+
+        #region Jobify Part
+
+        public const int DESIRED_JOB_SIZE = 16;
+
+        private JobHandle mFixUpdateJobHandle;
+        private JobHandle mUpdateJobHandle;
+        private JobHandle mLateUpdateJobHandle;
+
+        //private NativeList<Point> mPointList;
+
+
+        private void InitJobifyVariables()
         {
-            UpdateVelocity();
-
-            EmissionStep(DeltaTime);
-
-            SnapLastPointToTransform();
-
-            UpdatePointsLifecycle();
-
-            if (onUpdatePoints != null)
-                onUpdatePoints();
-
-#if UNITY_EDITOR
-            if (!baseOnSceneViewCamera)
-            {
-                if (curCamera != null)
-                    UpdateTrailMesh(curCamera);
-                else if (Camera.main != null)
-                    UpdateTrailMesh(Camera.main);
-            }
-            else
-            {
-                if (SceneView.lastActiveSceneView != null && SceneView.lastActiveSceneView.camera != null)
-                    UpdateTrailMesh(SceneView.lastActiveSceneView.camera);
-            }
-#else
-            if(curCamera != null)
-                UpdateTrailMesh(curCamera);
-            else if(Camera.main != null)
-                UpdateTrailMesh(Camera.main);
-#endif
-
+            //this.mPointList = new NativeList<Point>();
         }
 
 
-        public void TimeFixUpdate()
+        private void ClearJobifyVariables()
         {
-            if (!enablePhysics)
-                return;
-
-            PhysicsStep(FixedDeltaTime);
+            this.mFixUpdateJobHandle.Complete();
+            this.mUpdateJobHandle.Complete();
         }
+
+        private void LateUpdateJobify()
+        {
+
+
+            if (this.points.Count > 1)
+            {
+                //mLateUpdateJobHandle = 
+
+            }
+        }
+
+        public struct PhysicsStepJob : IJobParallelFor
+        {
+            public NativeList<Point> PointList;
+            public Vector3 gravity;
+            public float velocity_scale;
+            public float timestep;
+
+            public void Execute(int index)
+            {
+                Point point = PointList[index];
+
+                // apply gravity and external forces:
+                point.velocity += gravity * timestep;
+                point.velocity *= velocity_scale;
+
+                // integrate velocity:
+                point.position += point.velocity * timestep;
+
+                PointList[index] = point;
+            }
+        }
+
+
+        public struct UpdateVelocityJob : IJob
+        {
+            public Vector3 position;  // transform.position
+            public Vector3 prevPosition;
+            public float DeltaTime;
+            public Vector3 velocity;
+            public float speed;
+            public float velocitySmoothing;
+
+            public void Execute()
+            {
+                if (DeltaTime > 0)
+                {
+                    velocity = Vector3.Lerp((position - prevPosition) / DeltaTime, velocity, velocitySmoothing);
+                    speed = velocity.magnitude;
+                }
+                prevPosition = position;
+            }
+        }
+
+
+        public struct EmissionStepJob : IJob
+        {
+            public float accumTime;
+            public float time;
+            public float timeInterval;
+            public bool emit;
+            public Space space;
+            public Vector3 localPosition;
+            public Vector3 position;
+            public float minDistance;
+            public NativeList<Point> points;
+
+            public Vector3 initialVelocity;
+            public Vector3 velocity;
+            public float inertia;
+            public Vector3 tangent;
+            public Vector3 normal;
+            public Color initialColor;
+            public float initialThickness;
+
+            public void Execute()
+            {
+                // Acumulate the amount of time passed:
+                accumTime += time;
+
+                // If enough time has passed since the last emission (>= timeInterval), consider emitting new points.
+                if (accumTime >= timeInterval)
+                {
+                    if (emit)
+                    {
+                        // Select the emission position, depending on the simulation space:
+                        Vector3 pos = space == Space.Self ? localPosition : position;
+                        // If there's at least 1 point and it is not far enough from the current position, don't spawn any new points this frame.
+                        if (points.Length <= 1 || Vector3.Distance(pos, points[points.Length - 2].position) >= minDistance)
+                        {
+                            points.Add(new Point(position, initialVelocity + velocity * inertia, tangent, normal, initialColor, initialThickness, time));
+                            accumTime = 0;
+                        }
+                    }
+                }
+
+
+
+
+                if (points.Length > 0)
+                {
+
+                    Point lastPoint = points[points.Length - 1];
+
+                    // if we are not emitting, the last point is a discontinuity.
+                    if (!emit)
+                        lastPoint.discontinuous = true;
+
+                    // if the point is discontinuous, move and orient it according to the transform.
+                    if (!lastPoint.discontinuous)
+                    {
+                        lastPoint.position = space == Space.Self ? localPosition : position;
+                        lastPoint.normal = normal;
+                        lastPoint.tangent = tangent;
+                    }
+
+                    points[points.Length - 1] = lastPoint;
+                }
+
+            }
+        }
+
+
+        public struct UpdatePointsLifecycleJob : IJobParallelFor
+        {
+            public NativeList<Point> PointList;
+            public float DeltaTime;
+            public int smoothness;
+
+
+            public void Execute(int index)
+            {
+
+                Point point = PointList[index];
+                point.life -= DeltaTime;
+                PointList[index] = point;
+
+                if (point.life <= 0)
+                {
+                    // Unsmoothed trails delete points as soon as they die.
+                    if (smoothness <= 1)
+                    {
+                        PointList.RemoveAt(index);
+                    }
+                    // Smoothed trails however, should wait until the next 2 points are dead too. This ensures spline continuity.
+                    else
+                    {
+                        if (PointList[Mathf.Min(index + 1, PointList.Length - 1)].life <= 0 &&
+                            PointList[Mathf.Min(index + 2, PointList.Length - 1)].life <= 0)
+                            PointList.RemoveAt(index);
+                    }
+
+                }
+            }
+        }
+
+
+        public struct UpdateMeshDataJob : IJob
+        {
+            public Vector3 localCamPosition;
+            public NativeList<Point> points;
+            public void Execute()
+            {
+                // We need at least two points to create a trail mesh.
+                if (points.Length > 1)
+                {
+
+
+                }
+
+                //Vector3 localCamPosition = space == Space.Self && transform.parent != null ? transform.parent.InverseTransformPoint(cam.transform.position) : cam.transform.position;
+
+
+                //discontinuities.Clear();
+                //for (int i = 0; i < points.Count; ++i)
+                //    if (points[i].discontinuous || i == points.Count - 1) discontinuities.Add(i);
+
+
+                //int start = 0;
+                //for (int i = 0; i < discontinuities.Count; ++i)
+                //{
+                //    UpdateSegmentMesh(points, start, discontinuities[i], localCamPosition);
+                //    start = discontinuities[i] + 1;
+                //}
+
+                //CommitMeshData();
+
+                //RenderMesh(cam);
+
+            }
+        }
+
+        #endregion
+
+
+
+
 
     }
-
-
-
-
 }

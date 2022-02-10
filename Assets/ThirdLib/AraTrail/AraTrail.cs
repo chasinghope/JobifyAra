@@ -477,7 +477,7 @@ namespace Ara{
     
                 points[i] = point;
             }
-        }
+        } 
     
         /**
          * Updates point physics.
