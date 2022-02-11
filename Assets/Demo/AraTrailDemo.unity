@@ -122,49 +122,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &128505392
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 128505394}
-  - component: {fileID: 128505393}
-  m_Layer: 0
-  m_Name: AraTrailJobMgr
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &128505393
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 128505392}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3673e013046b8374f9c2dfb7da06bedd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!4 &128505394
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 128505392}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 5
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &695981994
 GameObject:
   m_ObjectHideFlags: 0
@@ -191,7 +148,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 695981994}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5a6e191aaf6b7334fb3917bc6852687e, type: 3}
+  m_Script: {fileID: 11500000, guid: d8df0e7aba2b0db45b2fad7b88aeb059, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   baseOnSceneViewCamera: 0
@@ -208,17 +165,26 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: 5
-      inSlope: -4
-      outSlope: -4
+      inSlope: -3.9999993
+      outSlope: -3.9999993
       tangentMode: 34
       weightedMode: 0
       inWeight: 0
       outWeight: 0.33333334
     - serializedVersion: 3
-      time: 1
-      value: 1
+      time: 0.38591433
+      value: 3.456343
       inSlope: -4
       outSlope: -4
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: -4.0000005
+      outSlope: -4.0000005
       tangentMode: 34
       weightedMode: 0
       inWeight: 0.33333334
@@ -228,7 +194,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   colorOverLenght:
     serializedVersion: 2
-    key0: {r: 1, g: 1, b: 1, a: 1}
+    key0: {r: 1, g: 0.62663656, b: 0, a: 1}
     key1: {r: 1, g: 1, b: 1, a: 1}
     key2: {r: 0, g: 0, b: 0, a: 0}
     key3: {r: 0, g: 0, b: 0, a: 0}
@@ -263,7 +229,16 @@ MonoBehaviour:
       value: 1
       inSlope: 0
       outSlope: 0
-      tangentMode: 0
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 34
       weightedMode: 0
       inWeight: 0
       outWeight: 0
@@ -306,14 +281,13 @@ MonoBehaviour:
   timeInterval: 0.025
   minDistance: 0.025
   time: 10
-  enablePhysics: 0
+  enablePhysics: 1
   warmup: 0
   gravity: {x: 0, y: 0, z: 0}
   inertia: 0
   velocitySmoothing: 0.75
   damping: 0.75
   materials:
-  - {fileID: 2100000, guid: c8f7885ed4998894d97d9b7aee983418, type: 2}
   - {fileID: 2100000, guid: efc794c3558350e419e6a4d31e200f72, type: 2}
   castShadows: 1
   receiveShadows: 1
@@ -324,6 +298,7 @@ MonoBehaviour:
   uvFlowX: 0
   uvFlowY: 0
   curCamera: {fileID: 0}
+  points: []
 --- !u!4 &695981997
 Transform:
   m_ObjectHideFlags: 0
@@ -371,7 +346,7 @@ MonoBehaviour:
   Camera: {fileID: 980096486}
   TrailPrefab: {fileID: 1753415968}
   TrailJobPrefab: {fileID: 695981994}
-  GenerateCount: 100
+  GenerateCount: 300
   ClipPlane: 1000
   Speed: 10
   PosArray: []
@@ -622,14 +597,13 @@ MonoBehaviour:
   timeInterval: 0.025
   minDistance: 0.025
   time: 10
-  enablePhysics: 0
+  enablePhysics: 1
   warmup: 0
   gravity: {x: 0, y: 0, z: 0}
   inertia: 0
   velocitySmoothing: 0.75
   damping: 0.75
   materials:
-  - {fileID: 2100000, guid: efc794c3558350e419e6a4d31e200f72, type: 2}
   - {fileID: 2100000, guid: c8f7885ed4998894d97d9b7aee983418, type: 2}
   castShadows: 1
   receiveShadows: 1
