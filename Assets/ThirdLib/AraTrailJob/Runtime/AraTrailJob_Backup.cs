@@ -362,136 +362,6 @@ namespace AraJob
             mesh_.MarkDynamic();
         }
 
-
-        private void Update()
-        {
-            #region 源代码
-
-            //UpdateVelocity();
-
-            //EmissionStep(DeltaTime);
-
-            //SnapLastPointToTransform();
-
-            //UpdatePointsLifecycle();
-
-            //if (onUpdatePoints != null)
-            //    onUpdatePoints();
-            #endregion
-
-            if (!this.mUpdateJobHandle.IsCompleted)
-                return;
-
-            FillJobifyVariables();
-
-            UpdateVelocityJob updateVelocityJob = new UpdateVelocityJob
-            {
-                mHeadArray = this.mHeadArray,
-                //mTranArray = this.mTransfromArray
-            };
-
-            this.mUpdateJobHandle = updateVelocityJob.Schedule(this.mUpdateJobHandle);
-
-            EmissionStepJob emissionStepJob = new EmissionStepJob
-            {
-                mHeadArray = this.mHeadArray,
-                //mTranArray = this.mTransfromArray,
-                mPoints = this.mPointList
-            };
-
-            this.mUpdateJobHandle = emissionStepJob.Schedule(this.mUpdateJobHandle);
-
-            SnapLastPointToTransformJob snapLastPointJob = new SnapLastPointToTransformJob
-            {
-                mHeadArray = this.mHeadArray,
-                //mTranArray = this.mTransfromArray,
-                mPoints = this.mPointList
-            };
-
-            this.mUpdateJobHandle = snapLastPointJob.Schedule(this.mUpdateJobHandle);
-
-            UpdatePointsLifecycleJob updatePointsLifecycle = new UpdatePointsLifecycleJob
-            {
-                PointList = this.mPointList,
-                mHeadArray = this.mHeadArray
-            };
-
-            this.mUpdateJobHandle = updatePointsLifecycle.Schedule(this.mUpdateJobHandle);
-
-           
-            this.mUpdateJobHandle.Complete();
-            OutputJobResult();
-
-
-            #region abandoned
-            /*
-NativeList<Point> rPoint = new NativeList<Point>(1, Allocator.TempJob);
-for (int i = 0; i < this.points.Count; i++)
-{
-    rPoint.Add(this.points[i]);
-}
-
-EmissionStepJob emissionStepJob = new EmissionStepJob
-{
-    accumTime = this.accumTime,
-    time = this.time,
-    timeInterval = this.timeInterval,
-    emit = this.emit,
-    space = this.space,
-    localPosition = this.transform.localPosition,
-    position = this.transform.position,
-    minDistance = this.minDistance,
-    points = rPoint,
-    initialVelocity = this.initialVelocity,
-    inertia = this.inertia,
-    tangent = this.transform.right,
-    normal = this.transform.forward,
-    initialColor = this.initialColor,
-    initialThickness = this.initialThickness,
-    DeltaTime = this.DeltaTime,
-    smoothness = this.smoothness
-};
-emissionStepJob.Schedule().Complete();
-
-this.points.Clear();
-for (int i = 0; i < emissionStepJob.points.Length; i++)
-{
-    this.points.Add(emissionStepJob.points[i]);
-}
-rPoint.Dispose();
-
-
-NativeList<Point> pointList = new NativeList<Point>(1, Allocator.TempJob);
-
-for (int i = 0; i < this.points.Count; i++)
-{
-    pointList.Add(this.points[i]);
-}
-
-
-UpdatePointsLifecycleJob physicsStepJob = new UpdatePointsLifecycleJob
-{
-    PointList = pointList,
-    DeltaTime = this.DeltaTime,
-    smoothness = this.smoothness
-};
-
-this.mUpdateJobHandle = physicsStepJob.Schedule(pointList.Length, DESIRED_JOB_SIZE);
-this.mUpdateJobHandle.Complete();
-
-for (int i = 0; i < this.points.Count; i++)
-{
-    this.points[i] = pointList[i];
-}
-pointList.Dispose();
-
-*/
-
-
-            #endregion
-        }
-
-
         private void FixedUpdate()
         {
             if (!this.mLateUpdateJobHandle.IsCompleted)
@@ -1232,7 +1102,7 @@ pointList.Dispose();
             //this.mTimeThickCurve = new NativeArray<Keyframe>(this.thicknessOverTime.keys, Allocator.Persistent);
             //this.mTimeThickColorKeys = new NativeArray<GradientColorKey>(this.colorOverTime.colorKeys, Allocator.Persistent);
             //this.mTimeThickAlphaKeys = new NativeArray<GradientAlphaKey>(this.colorOverTime.alphaKeys, Allocator.Persistent);
-
+            FillJobifyVariables();
         }
 
 
@@ -1374,34 +1244,44 @@ pointList.Dispose();
 
         private void LateUpdateJobify()
         {
+            if (!this.mUpdateJobHandle.IsCompleted)
+                return;
 
+            FillJobifyVariables();
 
-
-            /*
-            UpdateTrailMeshJob updateTrailMeshJob = new UpdateTrailMeshJob
+            UpdateVelocityJob updateVelocityJob = new UpdateVelocityJob
             {
-                mPoints = this.mPointList,
                 mHeadArray = this.mHeadArray,
-                discontinuities = this.discontinuitiesNative,
-                vertices = this.verticesNative,
-                tangents = this.tangentsNative,
-                vertColors = this.vertColorsNative,
-                uvs = this.uvsNative,
-                tris = this.trisNative,
-                normals = this.normalsNative,
-
-                mLengthThickCurve = this.mLengthThickCurve,
-                mLengthThickColorKeys = this.mLengthThickColorKeys,
-                mLengthThickAlphaKeys = this.mLengthThickAlphaKeys,
-
-                mTimeThickCurve = this.mTimeThickCurve,
-                mTimeThickColorKeys = this.mTimeThickColorKeys,
-                mTimeThickAlphaKeys = this.mTimeThickAlphaKeys
-
             };
 
-            updateTrailMeshJob.Schedule().Complete();
-            */
+            this.mUpdateJobHandle = updateVelocityJob.Schedule(this.mUpdateJobHandle);
+
+            EmissionStepJob emissionStepJob = new EmissionStepJob
+            {
+                mHeadArray = this.mHeadArray,
+                mPoints = this.mPointList
+            };
+
+            this.mUpdateJobHandle = emissionStepJob.Schedule(this.mUpdateJobHandle);
+
+            SnapLastPointToTransformJob snapLastPointJob = new SnapLastPointToTransformJob
+            {
+                mHeadArray = this.mHeadArray,
+                mPoints = this.mPointList
+            };
+
+            this.mUpdateJobHandle = snapLastPointJob.Schedule(this.mUpdateJobHandle);
+
+            UpdatePointsLifecycleJob updatePointsLifecycle = new UpdatePointsLifecycleJob
+            {
+                PointList = this.mPointList,
+                mHeadArray = this.mHeadArray
+            };
+
+            this.mUpdateJobHandle = updatePointsLifecycle.Schedule(this.mUpdateJobHandle);
+
+            this.mUpdateJobHandle.Complete();
+            OutputJobResult();
 
 
             NativeList<float> normalizedLengthList = new NativeList<float>(Allocator.TempJob);
@@ -1417,7 +1297,10 @@ pointList.Dispose();
             };
 
             updateTrailMeshJobA.Schedule().Complete();
+            //this.mUpdateJobHandle = updateTrailMeshJobA.Schedule();
 
+            //this.mUpdateJobHandle.Complete();
+            //OutputJobResult();
 
             NativeList<Color> lengthThickColor = new NativeList<Color>(Allocator.TempJob);
             NativeList<Color> timeThickColor = new NativeList<Color>(Allocator.TempJob);
@@ -1508,7 +1391,7 @@ pointList.Dispose();
                 tris.Add(trisNative[i]);
             }
 
-    
+
 
             mesh_.SetVertices(vertices);
             mesh_.SetNormals(normals);
