@@ -411,6 +411,8 @@ namespace Ara{
 
             if (onUpdatePoints != null)
                 onUpdatePoints();
+
+            //Debug.Log($"<color=orange>this.points: {this.points.Count}</color>");
         }
 
         private void EmissionStep(float time){

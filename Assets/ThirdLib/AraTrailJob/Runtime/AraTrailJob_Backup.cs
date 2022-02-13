@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Jobs;
 #if UNITY_EDITOR
@@ -8,7 +7,6 @@ using UnityEditor;
 using UnityEngine;
 using Unity.Burst;
 using UnityEngine.Jobs;
-using Unity.Mathematics;
 
 namespace AraJob
 {
@@ -381,6 +379,9 @@ namespace AraJob
             //    onUpdatePoints();
             #endregion
 
+            if (!this.mUpdateJobHandle.IsCompleted)
+                return;
+
             FillJobifyVariables();
 
             UpdateVelocityJob updateVelocityJob = new UpdateVelocityJob
@@ -419,7 +420,7 @@ namespace AraJob
 
            
             this.mUpdateJobHandle.Complete();
-            //OutputJobResult();
+            OutputJobResult();
 
 
             #region abandoned
@@ -493,7 +494,8 @@ pointList.Dispose();
 
         private void FixedUpdate()
         {
-
+            if (!this.mLateUpdateJobHandle.IsCompleted)
+                return;
             if (!enablePhysics)
                 return;
 
@@ -1200,6 +1202,13 @@ pointList.Dispose();
         public NativeList<int> trisNative;
         public NativeList<Vector3> normalsNative;
 
+        public NativeArray<Keyframe> mLengthThickCurve;
+        public NativeArray<GradientColorKey> mLengthThickColorKeys;
+        public NativeArray<GradientAlphaKey> mLengthThickAlphaKeys;
+        public NativeArray<Keyframe> mTimeThickCurve;
+        public NativeArray<GradientColorKey> mTimeThickColorKeys;
+        public NativeArray<GradientAlphaKey> mTimeThickAlphaKeys;
+
 
         private void InitJobifyVariables()
         {
@@ -1215,13 +1224,20 @@ pointList.Dispose();
             this.trisNative = new NativeList<int>(Allocator.Persistent);
             this.normalsNative = new NativeList<Vector3>(Allocator.Persistent);
 
+
+            this.mLengthThickCurve = new NativeArray<Keyframe>(this.thicknessOverLenght.keys, Allocator.Persistent);
+            this.mLengthThickColorKeys = new NativeArray<GradientColorKey>(this.colorOverLenght.colorKeys, Allocator.Persistent);
+            this.mLengthThickAlphaKeys = new NativeArray<GradientAlphaKey>(this.colorOverLenght.alphaKeys, Allocator.Persistent);
+
+            this.mTimeThickCurve = new NativeArray<Keyframe>(this.thicknessOverTime.keys, Allocator.Persistent);
+            this.mTimeThickColorKeys = new NativeArray<GradientColorKey>(this.colorOverTime.colorKeys, Allocator.Persistent);
+            this.mTimeThickAlphaKeys = new NativeArray<GradientAlphaKey>(this.colorOverTime.alphaKeys, Allocator.Persistent);
+
         }
 
 
         private void FillJobifyVariables()
         {
-            this.mPointList.Clear();
-            //this.mTransfromArray.RemoveAtSwapBack(0);
 
             Camera tempCamera = null;
 
@@ -1283,12 +1299,6 @@ pointList.Dispose();
                 thickness = this.thickness
             };
 
-            for (int i = 0; i < this.points.Count; i++)
-            {
-                this.mPointList.Add(this.points[i]);
-            }
-
-            //this.mTransfromArray.Add(this.transform);
         }
 
 
@@ -1300,13 +1310,6 @@ pointList.Dispose();
             this.velocity = rHead.velocity;
             this.speed = rHead.speed;
             this.accumTime = rHead.accumTime;
-
-            this.points.Clear();
-            for (int i = 0; i < this.mPointList.Length; i++)
-            {
-                this.points.Add(this.mPointList[i]);
-            }
-
         }
 
 
@@ -1337,10 +1340,44 @@ pointList.Dispose();
             if (this.normalsNative.IsCreated)
                 this.normalsNative.Dispose();
 
+            if (this.mLengthThickCurve.IsCreated)
+            {
+                this.mLengthThickCurve.Dispose();
+            }
+            if (this.mLengthThickColorKeys.IsCreated)
+            {
+                this.mLengthThickColorKeys.Dispose();
+            }
+            if (this.mLengthThickAlphaKeys.IsCreated)
+            {
+                this.mLengthThickAlphaKeys.Dispose();
+            }
+
+
+            if (this.mTimeThickCurve.IsCreated)
+            {
+                this.mTimeThickCurve.Dispose();
+            }
+            if (this.mTimeThickColorKeys.IsCreated)
+            {
+                this.mTimeThickColorKeys.Dispose();
+            }
+            if (this.mTimeThickAlphaKeys.IsCreated)
+            {
+                this.mTimeThickAlphaKeys.Dispose();
+            }
+
+
+
+
         }
 
         private void LateUpdateJobify()
         {
+
+
+
+            /*
             UpdateTrailMeshJob updateTrailMeshJob = new UpdateTrailMeshJob
             {
                 mPoints = this.mPointList,
@@ -1351,11 +1388,92 @@ pointList.Dispose();
                 vertColors = this.vertColorsNative,
                 uvs = this.uvsNative,
                 tris = this.trisNative,
-                normals = this.normalsNative
+                normals = this.normalsNative,
+
+                mLengthThickCurve = this.mLengthThickCurve,
+                mLengthThickColorKeys = this.mLengthThickColorKeys,
+                mLengthThickAlphaKeys = this.mLengthThickAlphaKeys,
+
+                mTimeThickCurve = this.mTimeThickCurve,
+                mTimeThickColorKeys = this.mTimeThickColorKeys,
+                mTimeThickAlphaKeys = this.mTimeThickAlphaKeys
 
             };
 
             updateTrailMeshJob.Schedule().Complete();
+            */
+
+
+            NativeList<float> normalizedLengthList = new NativeList<float>(Allocator.TempJob);
+            NativeList<float> normalizedLifeList = new NativeList<float>(Allocator.TempJob);
+
+            UpdateTrailMeshJob_PartA updateTrailMeshJobA = new UpdateTrailMeshJob_PartA
+            {
+                mPoints = this.mPointList,
+                mHeadArray = this.mHeadArray,
+                discontinuities = this.discontinuitiesNative,
+                normalizedLengthList = normalizedLengthList,
+                normalizedLifeList = normalizedLifeList,
+            };
+
+            updateTrailMeshJobA.Schedule().Complete();
+
+
+            NativeList<Color> lengthThickColor = new NativeList<Color>(Allocator.TempJob);
+            NativeList<Color> timeThickColor = new NativeList<Color>(Allocator.TempJob);
+            NativeList<float> lengthThickCurve = new NativeList<float>(Allocator.TempJob);
+            NativeList<float> timeThickCurve = new NativeList<float>(Allocator.TempJob);
+
+            for (int i = 0; i < normalizedLifeList.Length; i++)
+            {
+                Color timeColor = this.colorOverTime.Evaluate(normalizedLifeList[i]);
+                timeThickColor.Add(timeColor);
+                float timeCurveValue = this.thicknessOverTime.Evaluate(normalizedLifeList[i]);
+                timeThickCurve.Add(timeCurveValue);
+            }
+
+            for (int i = 0; i < normalizedLengthList.Length; i++)
+            {
+                Color lengthColor = this.colorOverLenght.Evaluate(normalizedLengthList[i]);
+                lengthThickColor.Add(lengthColor);
+                float lengthCurveValue = this.thicknessOverLenght.Evaluate(normalizedLengthList[i]);
+                lengthThickCurve.Add(lengthCurveValue);
+            }
+
+
+            normalizedLengthList.Dispose();
+            normalizedLifeList.Dispose();
+
+
+            UpdateTrailMeshJob_PartB updateTrailMeshJobB = new UpdateTrailMeshJob_PartB
+            {
+                mPoints = this.mPointList,
+                mHeadArray = this.mHeadArray,
+                discontinuities = this.discontinuitiesNative,
+
+                vertices = this.verticesNative,
+                tangents = this.tangentsNative,
+                vertColors = this.vertColorsNative,
+                uvs = this.uvsNative,
+                tris = this.trisNative,
+                normals = this.normalsNative,
+
+                lengthThickColor = lengthThickColor,
+                timeThickColor = timeThickColor,
+                lengthThickCurve = lengthThickCurve,
+                timeThickCurve = timeThickCurve
+            };
+
+            updateTrailMeshJobB.Schedule().Complete();
+
+
+
+            lengthThickColor.Dispose();
+            lengthThickCurve.Dispose();
+            timeThickColor.Dispose();
+            timeThickCurve.Dispose();
+
+
 
             this.ClearMeshData();
 
@@ -1527,7 +1645,7 @@ pointList.Dispose();
 
                 // Acumulate the amount of time passed:
                 rHead.accumTime += rHead.time;
-
+                //Debug.Log($"joB accumTIme {rHead.accumTime}  {rHead.time}   {rHead.timeInterval}");
                 // If enough time has passed since the last emission (>= timeInterval), consider emitting new points.
                 if (rHead.accumTime >= rHead.timeInterval)
                 {
@@ -1540,11 +1658,12 @@ pointList.Dispose();
                         {
                             mPoints.Add(new Point(position, rHead.initialVelocity + rHead.velocity * rHead.inertia, rHead.tangent, rHead.normal, rHead.initialColor, rHead.initialThickness, rHead.time));
                             rHead.accumTime = 0;
+                            //Debug.Log($"Tag {mPoints.Length}");
                         }
                     }
                 }
                 mHeadArray[0] = rHead;
-
+                //Debug.Log($"JOb mHeadArray[0] { mHeadArray[0].accumTime}  { mHeadArray[0].time}   { mHeadArray[0].timeInterval}");
             }
         }
 
@@ -1638,31 +1757,378 @@ pointList.Dispose();
             }
         }
 
-        [BurstCompile]
-        public struct UpdateTrailMeshJob : IJob
-        {
+        //[BurstCompile]
+        //public struct UpdateTrailMeshJob : IJob
+        //{
 
-            //public TransformAccessArray mCurCameraArray;
+        //    //public TransformAccessArray mCurCameraArray;
+        //    public NativeList<Point> mPoints;
+        //    public NativeArray<Head> mHeadArray;
+        //    public NativeList<int> discontinuities;
+
+        //    public NativeList<Vector3> vertices;
+        //    public NativeList<Vector3> tangents;
+        //    public NativeList<Color> vertColors;
+        //    public NativeList<Vector3> uvs;
+        //    public NativeList<int> tris;
+        //    public NativeList<Vector3> normals;
+
+
+        //    //[ReadOnly] public NativeArray<Keyframe> mLengthThickCurve;
+        //    //[ReadOnly] public NativeArray<GradientColorKey> mLengthThickColorKeys;
+        //    //[ReadOnly] public NativeArray<GradientAlphaKey> mLengthThickAlphaKeys;
+        //    //[ReadOnly] public NativeArray<Keyframe> mTimeThickCurve;
+        //    //[ReadOnly] public NativeArray<GradientColorKey> mTimeThickColorKeys;
+        //    //[ReadOnly] public NativeArray<GradientAlphaKey> mTimeThickAlphaKeys;
+
+
+        //    public void Execute()
+        //    {
+        //        ClearMeshData();
+
+        //        // We need at least two points to create a trail mesh.
+        //        if (mPoints.Length > 1)
+        //        {
+
+        //            //Vector3 localCamPosition = rHead.space == Space.Self && transform.parent != null ? transform.parent.InverseTransformPoint(cam.transform.position) : cam.transform.position;
+
+        //            // get discontinuous point indices:
+        //            discontinuities.Clear();
+        //            for (int i = 0; i < mPoints.Length; ++i)
+        //                if (mPoints[i].discontinuous || i == mPoints.Length - 1) discontinuities.Add(i);
+
+        //            // generate mesh for each trail segment:
+        //            int start = 0;
+        //            for (int i = 0; i < discontinuities.Length; ++i)
+        //            {
+        //                UpdateSegmentMesh(mPoints, start, discontinuities[i], mHeadArray[0].localCamPosition);
+        //                start = discontinuities[i] + 1;
+        //            }
+
+        //            //CommitMeshData();
+
+        //            //RenderMesh(cam);
+        //        }
+        //    }
+
+
+        //    private void UpdateSegmentMesh(NativeList<Point> input, int start, int end, Vector3 localCamPosition)
+        //    {
+        //        Head rHead = mHeadArray[0];
+        //        // Get a list of the actual points to render: either the original, unsmoothed points or the smoothed curve.
+        //        NativeList<Point> trail = GetRenderablePoints(input, start, end);
+
+        //        if (trail.Length > 1)
+        //        {
+
+        //            float lenght = Mathf.Max(GetLenght(trail), 0.00001f);
+        //            float partialLenght = 0;
+        //            float vCoord = rHead.textureMode == TextureMode.Stretch ? 0 : -rHead.uvFactor * lenght * rHead.tileAnchor;
+        //            Vector4 texTangent = Vector4.zero;
+        //            Vector2 uv = Vector2.zero;
+        //            Color vertexColor;
+
+        //            bool hqCorners = rHead.highQualityCorners && rHead.alignment != TrailAlignment.Local;
+
+        //            // Initialize curve frame using the first two points to calculate the first tangent vector:
+        //            CurveFrame frame = InitializeCurveFrame(trail[trail.Length - 1].position,
+        //                                                    trail[trail.Length - 2].position);
+
+        //            int va = 1;
+        //            int vb = 0;
+
+        //            int nextIndex;
+        //            int prevIndex;
+        //            Vector3 nextV;
+        //            Vector3 prevV;
+        //            Point curPoint;
+        //            for (int i = trail.Length - 1; i >= 0; --i)
+        //            {
+
+        //                curPoint = trail[i];
+        //                // Calculate next and previous point indices:
+        //                nextIndex = Mathf.Max(i - 1, 0);
+        //                prevIndex = Mathf.Min(i + 1, trail.Length - 1);
+
+        //                // Calculate next and previous trail vectors:
+        //                nextV = trail[nextIndex].position - curPoint.position;
+        //                prevV = curPoint.position - trail[prevIndex].position;
+        //                float sectionLength = nextV.magnitude;
+
+        //                nextV.Normalize();
+        //                prevV.Normalize();
+
+        //                // Calculate tangent vector:
+        //                Vector3 tangent = rHead.alignment == TrailAlignment.Local ? curPoint.tangent : (nextV + prevV);
+        //                tangent.Normalize();
+
+        //                // Calculate normal vector:
+        //                Vector3 normal = curPoint.normal;
+        //                if (rHead.alignment != TrailAlignment.Local)
+        //                    normal = rHead.alignment == TrailAlignment.View ? localCamPosition - curPoint.position : frame.Transport(tangent, curPoint.position);
+        //                normal.Normalize();
+
+        //                // Calculate bitangent vector:
+        //                Vector3 bitangent = rHead.alignment == TrailAlignment.Velocity ? frame.bitangent : Vector3.Cross(tangent, normal);
+        //                bitangent.Normalize();
+
+        //                // Calculate this point's normalized (0,1) lenght and life.
+        //                float normalizedLength = partialLenght / lenght;
+        //                float normalizedLife = Mathf.Clamp01(1 - curPoint.life / rHead.time);
+        //                partialLenght += sectionLength;
+
+        //                // Calulate vertex color:
+        //                //vertexColor = curPoint.color *
+        //                //              colorOverTime.Evaluate(normalizedLife) *
+        //                //              colorOverLenght.Evaluate(normalizedLength);
+        //                //vertexColor = curPoint.color *
+        //                //             UnityJobifyHelper.Gradient_Evaluate(mTimeThickColorKeys, mTimeThickAlphaKeys, GradientMode.Blend, normalizedLife) *
+        //                //             UnityJobifyHelper.Gradient_Evaluate(mLengthThickColorKeys, mLengthThickAlphaKeys, GradientMode.Blend, normalizedLength);
+
+        //                // Update vcoord:
+        //                vCoord += rHead.uvFactor * (rHead.textureMode == TextureMode.Stretch ? sectionLength / lenght : sectionLength);
+
+        //                // Calulate final thickness:
+        //                //float sectionThickness = rHead.thickness * curPoint.thickness * thicknessOverTime.Evaluate(normalizedLife) * thicknessOverLenght.Evaluate(normalizedLength);
+        //                //float sectionThickness = rHead.thickness * curPoint.thickness * UnityJobifyHelper.AnimationCurve_Evaluate(mTimeThickCurve, normalizedLife) * UnityJobifyHelper.AnimationCurve_Evaluate(mLengthThickCurve, normalizedLength);
+
+        //                Quaternion q = Quaternion.identity;
+        //                Vector3 corner = Vector3.zero;
+        //                float curvatureSign = 0;
+        //                float correctedThickness = sectionThickness;
+        //                Vector3 prevSectionBitangent = bitangent;
+
+        //                // High-quality corners: 
+        //                if (hqCorners)
+        //                {
+
+        //                    Vector3 nextSectionBitangent = i == 0 ? bitangent : Vector3.Cross(nextV, Vector3.Cross(bitangent, tangent)).normalized;
+
+        //                    // If round corners are enabled:
+        //                    if (rHead.cornerRoundness > 0)
+        //                    {
+
+        //                        prevSectionBitangent = i == trail.Length - 1 ? -bitangent : Vector3.Cross(prevV, Vector3.Cross(bitangent, tangent)).normalized;
+
+        //                        // Calculate "elbow" angle:
+        //                        curvatureSign = (i == 0 || i == trail.Length - 1) ? 1 : Mathf.Sign(Vector3.Dot(nextV, -prevSectionBitangent));
+        //                        float angle = (i == 0 || i == trail.Length - 1) ? Mathf.PI : Mathf.Acos(Mathf.Clamp(Vector3.Dot(nextSectionBitangent, prevSectionBitangent), -1, 1));
+
+        //                        // Prepare a quaternion for incremental rotation of the corner vector:
+        //                        q = Quaternion.AngleAxis(Mathf.Rad2Deg * angle / rHead.cornerRoundness, normal * curvatureSign);
+        //                        corner = prevSectionBitangent * sectionThickness * curvatureSign;
+        //                    }
+
+        //                    // Calculate correct thickness by projecting corner bitangent onto the next section bitangent. This prevents "squeezing"
+        //                    if (nextSectionBitangent.sqrMagnitude > 0.1f)
+        //                        correctedThickness = sectionThickness / Mathf.Max(Vector3.Dot(bitangent, nextSectionBitangent), 0.15f);
+
+        //                }
+
+
+        //                // Append straight section mesh data:
+
+        //                if (hqCorners && rHead.cornerRoundness > 0)
+        //                {
+
+        //                    // bitangents are slightly asymmetrical in case of high-quality round or sharp corners:
+        //                    if (curvatureSign > 0)
+        //                    {
+        //                        vertices.Add(curPoint.position + prevSectionBitangent * sectionThickness);
+        //                        vertices.Add(curPoint.position - bitangent * correctedThickness);
+        //                    }
+        //                    else
+        //                    {
+        //                        vertices.Add(curPoint.position + bitangent * correctedThickness);
+        //                        vertices.Add(curPoint.position - prevSectionBitangent * sectionThickness);
+        //                    }
+
+        //                }
+        //                else
+        //                {
+        //                    vertices.Add(curPoint.position + bitangent * correctedThickness);
+        //                    vertices.Add(curPoint.position - bitangent * correctedThickness);
+        //                }
+
+        //                normals.Add(-normal);
+        //                normals.Add(-normal);
+
+        //                texTangent = -bitangent;
+        //                texTangent.w = 1;
+        //                tangents.Add(texTangent);
+        //                tangents.Add(texTangent);
+
+        //                vertColors.Add(vertexColor);
+        //                vertColors.Add(vertexColor);
+
+        //                uv.Set(vCoord, 0);
+        //                uvs.Add(uv);
+        //                uv.Set(vCoord, 1);
+        //                uvs.Add(uv);
+
+        //                if (i < trail.Length - 1)
+        //                {
+
+        //                    int vc = vertices.Length - 1;
+
+        //                    tris.Add(vc);
+        //                    tris.Add(va);
+        //                    tris.Add(vb);
+
+        //                    tris.Add(vb);
+        //                    tris.Add(vc - 1);
+        //                    tris.Add(vc);
+        //                }
+
+        //                va = vertices.Length - 1;
+        //                vb = vertices.Length - 2;
+
+        //                // Append smooth corner mesh data:
+        //                if (hqCorners && rHead.cornerRoundness > 0)
+        //                {
+
+        //                    for (int p = 0; p <= rHead.cornerRoundness; ++p)
+        //                    {
+
+        //                        vertices.Add(curPoint.position + corner);
+        //                        normals.Add(-normal);
+        //                        tangents.Add(texTangent);
+        //                        vertColors.Add(vertexColor);
+        //                        uv.Set(vCoord, curvatureSign > 0 ? 0 : 1);
+        //                        uvs.Add(uv);
+
+        //                        int vc = vertices.Length - 1;
+
+        //                        tris.Add(vc);
+        //                        tris.Add(va);
+        //                        tris.Add(vb);
+
+        //                        if (curvatureSign > 0)
+        //                            vb = vc;
+        //                        else va = vc;
+
+        //                        // rotate corner point:
+        //                        corner = q * corner;
+        //                    }
+
+        //                }
+
+        //            }
+        //        }
+
+        //    }
+
+
+
+        //    private NativeList<Point> GetRenderablePoints(NativeList<Point> input, int start, int end)
+        //    {
+        //        Head rHead = mHeadArray[0];
+        //        NativeList<Point> points = mPoints;
+        //        //renderablePoints.Clear();
+
+        //        NativeList<Point> renderablePoints = new NativeList<Point>(Allocator.Temp);
+
+        //        if (rHead.smoothness <= 1)
+        //        {
+        //            for (int i = start; i <= end; ++i)
+        //                renderablePoints.Add(points[i]);
+        //            return renderablePoints;
+        //        }
+
+        //        // calculate sample size in normalized coordinates:
+        //        float samplesize = 1.0f / rHead.smoothness;
+
+        //        for (int i = start; i < end; ++i)
+        //        {
+
+        //            // Extrapolate first and last curve control points:
+        //            Point firstPoint = i == start ? points[start] + (points[start] - points[i + 1]) : points[i - 1];
+        //            Point lastPoint = i == end - 1 ? points[end] + (points[end] - points[end - 1]) : points[i + 2];
+
+        //            for (int j = 0; j < rHead.smoothness; ++j)
+        //            {
+
+        //                float t = j * samplesize;
+        //                Point interpolated = Point.Interpolate(firstPoint,
+        //                                                       points[i],
+        //                                                       points[i + 1],
+        //                                                       lastPoint, t);
+
+        //                // only if the interpolated point is alive, we add it to the list of points to render.
+        //                if (interpolated.life > 0)
+        //                    renderablePoints.Add(interpolated);
+        //            }
+
+        //        }
+
+        //        if (points[end].life > 0)
+        //            renderablePoints.Add(points[end]);
+
+        //        return renderablePoints;
+        //    }
+
+
+
+        //    private float GetLenght(NativeList<Point> input)
+        //    {
+
+        //        float lenght = 0;
+        //        for (int i = 0; i < input.Length - 1; ++i)
+        //            lenght += Vector3.Distance(input[i].position, input[i + 1].position);
+        //        return lenght;
+
+        //    }
+
+        //    private CurveFrame InitializeCurveFrame(Vector3 point, Vector3 nextPoint)
+        //    {
+        //        Head rHead = mHeadArray[0];
+        //        Vector3 tangent = nextPoint - point;
+
+        //        // Calculate tangent proximity to the normal vector of the frame (transform.forward).
+        //        float tangentProximity = Mathf.Abs(Vector3.Dot(tangent.normalized, rHead.normal));
+
+        //        // If both vectors are dangerously close, skew the tangent a bit so that a proper frame can be formed:
+        //        //if (Mathf.Approximately(tangentProximity, 1))
+        //        if(Mathf.Abs(tangentProximity - 1) < 0.0001f)
+        //            tangent += rHead.tangent * 0.01f;
+
+        //        // Generate and return the frame:
+        //        return new CurveFrame(point, rHead.normal, rHead.up, tangent);
+        //    }
+        
+        //    private void ClearMeshData()
+        //    {
+        //        vertices.Clear();
+        //        normals.Clear();
+        //        tangents.Clear();
+        //        uvs.Clear();
+        //        vertColors.Clear();
+        //        tris.Clear();
+        //    }
+        //}
+
+        [BurstCompile]
+        public struct UpdateTrailMeshJob_PartA : IJob
+        {
             public NativeList<Point> mPoints;
             public NativeArray<Head> mHeadArray;
             public NativeList<int> discontinuities;
+            public NativeList<float> normalizedLengthList;
+            public NativeList<float> normalizedLifeList;
 
-            public NativeList<Vector3> vertices;
-            public NativeList<Vector3> tangents;
-            public NativeList<Color> vertColors;
-            public NativeList<Vector3> uvs;
-            public NativeList<int> tris;
-            public NativeList<Vector3> normals;
+            //public NativeList<Vector3> vertices;
+            //public NativeList<Vector3> tangents;
+            //public NativeList<Color> vertColors;
+            //public NativeList<Vector3> uvs;
+            //public NativeList<int> tris;
+            //public NativeList<Vector3> normals;
 
-            //public void Execute()
-            //{
-            //    throw new System.NotImplementedException();
-            //}
+
+
             public void Execute()
             {
-                  //private void UpdateTrailMesh(Camera cam)
-
-                ClearMeshData();
+                normalizedLengthList.Clear();
+                normalizedLifeList.Clear();
 
                 // We need at least two points to create a trail mesh.
                 if (mPoints.Length > 1)
@@ -1695,6 +2161,179 @@ pointList.Dispose();
                 Head rHead = mHeadArray[0];
                 // Get a list of the actual points to render: either the original, unsmoothed points or the smoothed curve.
                 NativeList<Point> trail = GetRenderablePoints(input, start, end);
+
+                if (trail.Length > 1)
+                {
+
+                    float lenght = Mathf.Max(GetLenght(trail), 0.00001f);
+                    float partialLenght = 0;
+                    Color vertexColor;
+
+                    int nextIndex;
+                    int prevIndex;
+                    Vector3 nextV;
+                    Vector3 prevV;
+                    Point curPoint;
+                    for (int i = trail.Length - 1; i >= 0; --i)
+                    {
+
+                        curPoint = trail[i];
+                        // Calculate next and previous point indices:
+                        nextIndex = Mathf.Max(i - 1, 0);
+                        prevIndex = Mathf.Min(i + 1, trail.Length - 1);
+
+                        // Calculate next and previous trail vectors:
+                        nextV = trail[nextIndex].position - curPoint.position;
+                        prevV = curPoint.position - trail[prevIndex].position;
+                        float sectionLength = nextV.magnitude;
+
+                        nextV.Normalize();
+                        prevV.Normalize();
+
+                        // Calculate this point's normalized (0,1) lenght and life.
+                        float normalizedLength = partialLenght / lenght;
+                        float normalizedLife = Mathf.Clamp01(1 - curPoint.life / rHead.time);
+                        partialLenght += sectionLength;
+
+                        //TODO
+                        normalizedLengthList.Add(normalizedLength);
+                        normalizedLifeList.Add(normalizedLife);
+
+                    }
+                }
+
+            }
+
+
+
+            private NativeList<Point> GetRenderablePoints(NativeList<Point> input, int start, int end)
+            {
+                Head rHead = mHeadArray[0];
+                NativeList<Point> points = mPoints;
+                //renderablePoints.Clear();
+
+                NativeList<Point> renderablePoints = new NativeList<Point>(Allocator.Temp);
+
+                if (rHead.smoothness <= 1)
+                {
+                    for (int i = start; i <= end; ++i)
+                        renderablePoints.Add(points[i]);
+                    return renderablePoints;
+                }
+
+                // calculate sample size in normalized coordinates:
+                float samplesize = 1.0f / rHead.smoothness;
+
+                for (int i = start; i < end; ++i)
+                {
+
+                    // Extrapolate first and last curve control points:
+                    Point firstPoint = i == start ? points[start] + (points[start] - points[i + 1]) : points[i - 1];
+                    Point lastPoint = i == end - 1 ? points[end] + (points[end] - points[end - 1]) : points[i + 2];
+
+                    for (int j = 0; j < rHead.smoothness; ++j)
+                    {
+
+                        float t = j * samplesize;
+                        Point interpolated = Point.Interpolate(firstPoint,
+                                                               points[i],
+                                                               points[i + 1],
+                                                               lastPoint, t);
+
+                        // only if the interpolated point is alive, we add it to the list of points to render.
+                        if (interpolated.life > 0)
+                            renderablePoints.Add(interpolated);
+                    }
+
+                }
+
+                if (points[end].life > 0)
+                    renderablePoints.Add(points[end]);
+
+                return renderablePoints;
+            }
+
+
+
+            private float GetLenght(NativeList<Point> input)
+            {
+
+                float lenght = 0;
+                for (int i = 0; i < input.Length - 1; ++i)
+                    lenght += Vector3.Distance(input[i].position, input[i + 1].position);
+                return lenght;
+
+            }
+
+        }
+
+
+        [BurstCompile]
+        public struct UpdateTrailMeshJob_PartB : IJob
+        {
+
+            //public TransformAccessArray mCurCameraArray;
+            public NativeList<Point> mPoints;
+            public NativeArray<Head> mHeadArray;
+            public NativeList<int> discontinuities;
+
+            public NativeList<Vector3> vertices;
+            public NativeList<Vector3> tangents;
+            public NativeList<Color> vertColors;
+            public NativeList<Vector3> uvs;
+            public NativeList<int> tris;
+            public NativeList<Vector3> normals;
+
+            [ReadOnly] public NativeList<Color> lengthThickColor;
+            [ReadOnly] public NativeList<Color> timeThickColor;
+            [ReadOnly] public NativeList<float> lengthThickCurve;
+            [ReadOnly] public NativeList<float> timeThickCurve;
+
+
+            //[ReadOnly] public NativeArray<Keyframe> mLengthThickCurve;
+            //[ReadOnly] public NativeArray<GradientColorKey> mLengthThickColorKeys;
+            //[ReadOnly] public NativeArray<GradientAlphaKey> mLengthThickAlphaKeys;
+            //[ReadOnly] public NativeArray<Keyframe> mTimeThickCurve;
+            //[ReadOnly] public NativeArray<GradientColorKey> mTimeThickColorKeys;
+            //[ReadOnly] public NativeArray<GradientAlphaKey> mTimeThickAlphaKeys;
+
+
+            public void Execute()
+            {
+                ClearMeshData();
+
+                // We need at least two points to create a trail mesh.
+                if (mPoints.Length > 1)
+                {
+
+                    //Vector3 localCamPosition = rHead.space == Space.Self && transform.parent != null ? transform.parent.InverseTransformPoint(cam.transform.position) : cam.transform.position;
+
+                    // get discontinuous point indices:
+                    discontinuities.Clear();
+                    for (int i = 0; i < mPoints.Length; ++i)
+                        if (mPoints[i].discontinuous || i == mPoints.Length - 1) discontinuities.Add(i);
+
+                    // generate mesh for each trail segment:
+                    int start = 0;
+                    for (int i = 0; i < discontinuities.Length; ++i)
+                    {
+                        UpdateSegmentMesh(mPoints, start, discontinuities[i], mHeadArray[0].localCamPosition);
+                        start = discontinuities[i] + 1;
+                    }
+
+                    //CommitMeshData();
+
+                    //RenderMesh(cam);
+                }
+            }
+
+
+            private void UpdateSegmentMesh(NativeList<Point> input, int start, int end, Vector3 localCamPosition)
+            {
+                Head rHead = mHeadArray[0];
+                // Get a list of the actual points to render: either the original, unsmoothed points or the smoothed curve.
+                //NativeList<Point> trail = GetRenderablePoints(input, start, end);
+                NativeList<Point>  trail = input;
 
                 if (trail.Length > 1)
                 {
@@ -1759,14 +2398,16 @@ pointList.Dispose();
                         //vertexColor = curPoint.color *
                         //              colorOverTime.Evaluate(normalizedLife) *
                         //              colorOverLenght.Evaluate(normalizedLength);
-                        vertexColor = Color.red;
+                        vertexColor = curPoint.color * timeThickColor[i] * lengthThickColor[i];
+
+
 
                         // Update vcoord:
                         vCoord += rHead.uvFactor * (rHead.textureMode == TextureMode.Stretch ? sectionLength / lenght : sectionLength);
 
                         // Calulate final thickness:
                         //float sectionThickness = rHead.thickness * curPoint.thickness * thicknessOverTime.Evaluate(normalizedLife) * thicknessOverLenght.Evaluate(normalizedLength);
-                        float sectionThickness = 5f;
+                        float sectionThickness = rHead.thickness * curPoint.thickness * timeThickCurve[i] * lengthThickCurve[i];
 
                         Quaternion q = Quaternion.identity;
                         Vector3 corner = Vector3.zero;
@@ -1894,57 +2535,6 @@ pointList.Dispose();
 
             }
 
-
-
-            private NativeList<Point> GetRenderablePoints(NativeList<Point> input, int start, int end)
-            {
-                Head rHead = mHeadArray[0];
-                NativeList<Point> points = mPoints;
-                //renderablePoints.Clear();
-
-                NativeList<Point> renderablePoints = new NativeList<Point>(Allocator.Temp);
-
-                if (rHead.smoothness <= 1)
-                {
-                    for (int i = start; i <= end; ++i)
-                        renderablePoints.Add(points[i]);
-                    return renderablePoints;
-                }
-
-                // calculate sample size in normalized coordinates:
-                float samplesize = 1.0f / rHead.smoothness;
-
-                for (int i = start; i < end; ++i)
-                {
-
-                    // Extrapolate first and last curve control points:
-                    Point firstPoint = i == start ? points[start] + (points[start] - points[i + 1]) : points[i - 1];
-                    Point lastPoint = i == end - 1 ? points[end] + (points[end] - points[end - 1]) : points[i + 2];
-
-                    for (int j = 0; j < rHead.smoothness; ++j)
-                    {
-
-                        float t = j * samplesize;
-                        Point interpolated = Point.Interpolate(firstPoint,
-                                                               points[i],
-                                                               points[i + 1],
-                                                               lastPoint, t);
-
-                        // only if the interpolated point is alive, we add it to the list of points to render.
-                        if (interpolated.life > 0)
-                            renderablePoints.Add(interpolated);
-                    }
-
-                }
-
-                if (points[end].life > 0)
-                    renderablePoints.Add(points[end]);
-
-                return renderablePoints;
-            }
-
-
-
             private float GetLenght(NativeList<Point> input)
             {
 
@@ -1965,13 +2555,13 @@ pointList.Dispose();
 
                 // If both vectors are dangerously close, skew the tangent a bit so that a proper frame can be formed:
                 //if (Mathf.Approximately(tangentProximity, 1))
-                if(Mathf.Abs(tangentProximity - 1) < 0.0001f)
+                if (Mathf.Abs(tangentProximity - 1) < 0.0001f)
                     tangent += rHead.tangent * 0.01f;
 
                 // Generate and return the frame:
                 return new CurveFrame(point, rHead.normal, rHead.up, tangent);
             }
-        
+
             private void ClearMeshData()
             {
                 vertices.Clear();
@@ -1982,6 +2572,8 @@ pointList.Dispose();
                 tris.Clear();
             }
         }
+
+
     }
 
         #endregion
