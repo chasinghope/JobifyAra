@@ -1202,12 +1202,12 @@ pointList.Dispose();
         public NativeList<int> trisNative;
         public NativeList<Vector3> normalsNative;
 
-        public NativeArray<Keyframe> mLengthThickCurve;
-        public NativeArray<GradientColorKey> mLengthThickColorKeys;
-        public NativeArray<GradientAlphaKey> mLengthThickAlphaKeys;
-        public NativeArray<Keyframe> mTimeThickCurve;
-        public NativeArray<GradientColorKey> mTimeThickColorKeys;
-        public NativeArray<GradientAlphaKey> mTimeThickAlphaKeys;
+        //public NativeArray<Keyframe> mLengthThickCurve;
+        //public NativeArray<GradientColorKey> mLengthThickColorKeys;
+        //public NativeArray<GradientAlphaKey> mLengthThickAlphaKeys;
+        //public NativeArray<Keyframe> mTimeThickCurve;
+        //public NativeArray<GradientColorKey> mTimeThickColorKeys;
+        //public NativeArray<GradientAlphaKey> mTimeThickAlphaKeys;
 
 
         private void InitJobifyVariables()
@@ -1225,13 +1225,13 @@ pointList.Dispose();
             this.normalsNative = new NativeList<Vector3>(Allocator.Persistent);
 
 
-            this.mLengthThickCurve = new NativeArray<Keyframe>(this.thicknessOverLenght.keys, Allocator.Persistent);
-            this.mLengthThickColorKeys = new NativeArray<GradientColorKey>(this.colorOverLenght.colorKeys, Allocator.Persistent);
-            this.mLengthThickAlphaKeys = new NativeArray<GradientAlphaKey>(this.colorOverLenght.alphaKeys, Allocator.Persistent);
+            //this.mLengthThickCurve = new NativeArray<Keyframe>(this.thicknessOverLenght.keys, Allocator.Persistent);
+            //this.mLengthThickColorKeys = new NativeArray<GradientColorKey>(this.colorOverLenght.colorKeys, Allocator.Persistent);
+            //this.mLengthThickAlphaKeys = new NativeArray<GradientAlphaKey>(this.colorOverLenght.alphaKeys, Allocator.Persistent);
 
-            this.mTimeThickCurve = new NativeArray<Keyframe>(this.thicknessOverTime.keys, Allocator.Persistent);
-            this.mTimeThickColorKeys = new NativeArray<GradientColorKey>(this.colorOverTime.colorKeys, Allocator.Persistent);
-            this.mTimeThickAlphaKeys = new NativeArray<GradientAlphaKey>(this.colorOverTime.alphaKeys, Allocator.Persistent);
+            //this.mTimeThickCurve = new NativeArray<Keyframe>(this.thicknessOverTime.keys, Allocator.Persistent);
+            //this.mTimeThickColorKeys = new NativeArray<GradientColorKey>(this.colorOverTime.colorKeys, Allocator.Persistent);
+            //this.mTimeThickAlphaKeys = new NativeArray<GradientAlphaKey>(this.colorOverTime.alphaKeys, Allocator.Persistent);
 
         }
 
@@ -1340,32 +1340,32 @@ pointList.Dispose();
             if (this.normalsNative.IsCreated)
                 this.normalsNative.Dispose();
 
-            if (this.mLengthThickCurve.IsCreated)
-            {
-                this.mLengthThickCurve.Dispose();
-            }
-            if (this.mLengthThickColorKeys.IsCreated)
-            {
-                this.mLengthThickColorKeys.Dispose();
-            }
-            if (this.mLengthThickAlphaKeys.IsCreated)
-            {
-                this.mLengthThickAlphaKeys.Dispose();
-            }
+            //if (this.mLengthThickCurve.IsCreated)
+            //{
+            //    this.mLengthThickCurve.Dispose();
+            //}
+            //if (this.mLengthThickColorKeys.IsCreated)
+            //{
+            //    this.mLengthThickColorKeys.Dispose();
+            //}
+            //if (this.mLengthThickAlphaKeys.IsCreated)
+            //{
+            //    this.mLengthThickAlphaKeys.Dispose();
+            //}
 
 
-            if (this.mTimeThickCurve.IsCreated)
-            {
-                this.mTimeThickCurve.Dispose();
-            }
-            if (this.mTimeThickColorKeys.IsCreated)
-            {
-                this.mTimeThickColorKeys.Dispose();
-            }
-            if (this.mTimeThickAlphaKeys.IsCreated)
-            {
-                this.mTimeThickAlphaKeys.Dispose();
-            }
+            //if (this.mTimeThickCurve.IsCreated)
+            //{
+            //    this.mTimeThickCurve.Dispose();
+            //}
+            //if (this.mTimeThickColorKeys.IsCreated)
+            //{
+            //    this.mTimeThickColorKeys.Dispose();
+            //}
+            //if (this.mTimeThickAlphaKeys.IsCreated)
+            //{
+            //    this.mTimeThickAlphaKeys.Dispose();
+            //}
 
 
 
