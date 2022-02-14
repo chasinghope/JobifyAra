@@ -432,6 +432,7 @@ namespace Ara{
                     if (points.Count <= 1 || Vector3.Distance(position,points[points.Count-2].position) >= minDistance){
                         EmitPoint(position);    
                         accumTime = 0;
+                       //Debug.Log($"<color=#00ff00>accumTime: {accumTime}  mPoints: {points.Count}</color>");
                     }
                 }
             }
