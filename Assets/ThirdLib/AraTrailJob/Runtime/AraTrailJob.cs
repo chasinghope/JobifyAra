@@ -12,7 +12,7 @@ namespace AraJob
 {
 
     [ExecuteInEditMode]
-    public class AraTrailJob_Backup : MonoBehaviour
+    public class AraTrailJob : MonoBehaviour
     {
 
         public const float epsilon = 0.00001f;
@@ -364,8 +364,6 @@ namespace AraJob
 
         private void FixedUpdate()
         {
-            if (!this.mLateUpdateJobHandle.IsCompleted)
-                return;
             if (!enablePhysics)
                 return;
 
@@ -377,26 +375,9 @@ namespace AraJob
             //}
             //this.mFixUpdateJobHandle.Complete();
 
-            //if (this.mPointList.Length > 0)
+
+            //if(this.mPointList.Length > 0)
             //{
-
-            //    //NativeList<Point> pointList = new NativeList<Point>(1, Allocator.TempJob);
-
-            //    //for (int i = 0; i < this.points.Count; i++)
-            //    //{
-            //    //    pointList.Add(this.points[i]);
-            //    //}
-
-            //    //PhysicsStepJob physicsStepJob = new PhysicsStepJob
-            //    //{
-            //    //    PointList = pointList,
-            //    //    gravity = this.gravity,
-            //    //    velocity_scale = Mathf.Pow(1 - Mathf.Clamp01(damping), FixedDeltaTime),
-            //    //    timestep = FixedDeltaTime
-            //    //};
-
-            //    //this.mFixUpdateJobHandle = physicsStepJob.Schedule(pointList.Length, DESIRED_JOB_SIZE);
-            //    //this.mFixUpdateJobHandle.Complete();
 
             //    PhysicsStepIJob physicsStepIJob = new PhysicsStepIJob
             //    {
@@ -460,8 +441,10 @@ namespace AraJob
 
         void OnDisable()
         {
-            points.Clear();
-            this.mPointList.Clear();
+            //points.Clear();
+            //this.mUpdateJobHandle();
+            //this.mLateUpdateJobHandle.Complete();
+            //this.mPointList.Clear();
             // destroy both the trail mesh and the hidden renderer object:
             DestroyImmediate(mesh_);
             DestoryTrailGoc();
@@ -1059,8 +1042,10 @@ namespace AraJob
         private JobHandle mUpdateJobHandle;
         private JobHandle mLateUpdateJobHandle;
 
-        private UpdateTrailMeshJob_PartA updateTrailMeshJobA;
-        private UpdateTrailMeshJob_PartB updateTrailMeshJobB;
+
+        private bool isBusyUpdateJH;
+        private bool isBusyLateUpdateJH;
+
 
         private NativeArray<Head> mHeadArray;
         private NativeList<Point> mPointList;
@@ -1068,7 +1053,7 @@ namespace AraJob
 
         public NativeList<int> discontinuitiesNative;
         public NativeList<Vector3> verticesNative;
-        public NativeList<Vector4> tangentsNative;
+        public NativeList<Vector3> tangentsNative;
         public NativeList<Color> vertColorsNative;
         public NativeList<Vector3> uvsNative;
         public NativeList<int> trisNative;
@@ -1097,7 +1082,7 @@ namespace AraJob
 
             this.discontinuitiesNative = new NativeList<int>(Allocator.Persistent);
             this.verticesNative = new NativeList<Vector3>(Allocator.Persistent);
-            this.tangentsNative = new NativeList<Vector4>(Allocator.Persistent);
+            this.tangentsNative = new NativeList<Vector3>(Allocator.Persistent);
             this.vertColorsNative = new NativeList<Color>(Allocator.Persistent);
             this.uvsNative = new NativeList<Vector3>(Allocator.Persistent);
             this.trisNative = new NativeList<int>(Allocator.Persistent);
@@ -1185,35 +1170,6 @@ namespace AraJob
                 thickness = this.thickness
             };
 
-
-            updateTrailMeshJobA = new UpdateTrailMeshJob_PartA
-            {
-                mPoints = this.mPointList,
-                mHeadArray = this.mHeadArray,
-                discontinuities = this.discontinuitiesNative,
-                normalizedLengthList = normalizedLengthList,
-                normalizedLifeList = normalizedLifeList,
-            };
-
-            updateTrailMeshJobB = new UpdateTrailMeshJob_PartB
-            {
-                mPoints = this.mPointList,
-                mHeadArray = this.mHeadArray,
-                discontinuities = this.discontinuitiesNative,
-
-                vertices = this.verticesNative,
-                tangents = this.tangentsNative,
-                vertColors = this.vertColorsNative,
-                uvs = this.uvsNative,
-                tris = this.trisNative,
-                normals = this.normalsNative,
-
-                lengthThickColor = lengthThickColor,
-                timeThickColor = timeThickColor,
-                lengthThickCurve = lengthThickCurve,
-                timeThickCurve = timeThickCurve
-            };
-
         }
 
 
@@ -1232,6 +1188,7 @@ namespace AraJob
         {
             this.mFixUpdateJobHandle.Complete();
             this.mUpdateJobHandle.Complete();
+            this.mLateUpdateJobHandle.Complete();
 
             if (this.mHeadArray.IsCreated)
                 this.mHeadArray.Dispose();
@@ -1296,166 +1253,182 @@ namespace AraJob
 
         private void LateUpdateJobify()
         {
-            if (!this.mUpdateJobHandle.IsCompleted)
-                return;
-
-            FillJobifyVariables();
-
+            if (!this.isBusyLateUpdateJH && this.mUpdateJobHandle.IsCompleted)
             {
-                //UpdateVelocityJob updateVelocityJob = new UpdateVelocityJob
-                //{
-                //    mHeadArray = this.mHeadArray,
-                //};
+                //Debug.Log("mLateUpdateJobHandle");
+                this.mUpdateJobHandle.Complete();
+                this.isBusyUpdateJH = false;
 
-                //this.mUpdateJobHandle = updateVelocityJob.Schedule(this.mUpdateJobHandle);
 
-                //EmissionStepJob emissionStepJob = new EmissionStepJob
-                //{
-                //    mHeadArray = this.mHeadArray,
-                //    mPoints = this.mPointList
-                //};
+                for (int i = 0; i < normalizedLifeList.Length; i++)
+                {
+                    Color timeColor = this.colorOverTime.Evaluate(normalizedLifeList[i]);
+                    timeThickColor.Add(timeColor);
+                    float timeCurveValue = this.thicknessOverTime.Evaluate(normalizedLifeList[i]);
+                    timeThickCurve.Add(timeCurveValue);
+                }
 
-                //this.mUpdateJobHandle = emissionStepJob.Schedule(this.mUpdateJobHandle);
+                for (int i = 0; i < normalizedLengthList.Length; i++)
+                {
+                    Color lengthColor = this.colorOverLenght.Evaluate(normalizedLengthList[i]);
+                    lengthThickColor.Add(lengthColor);
+                    float lengthCurveValue = this.thicknessOverLenght.Evaluate(normalizedLengthList[i]);
+                    lengthThickCurve.Add(lengthCurveValue);
+                }
 
-                //SnapLastPointToTransformJob snapLastPointJob = new SnapLastPointToTransformJob
-                //{
-                //    mHeadArray = this.mHeadArray,
-                //    mPoints = this.mPointList
-                //};
 
-                //this.mUpdateJobHandle = snapLastPointJob.Schedule(this.mUpdateJobHandle);
+                normalizedLengthList.Clear();
+                normalizedLifeList.Clear();
 
-                //UpdatePointsLifecycleJob updatePointsLifecycle = new UpdatePointsLifecycleJob
-                //{
-                //    mPoints = this.mPointList,
-                //    mHeadArray = this.mHeadArray
-                //};
 
-                //this.mUpdateJobHandle = updatePointsLifecycle.Schedule(this.mUpdateJobHandle);
+                UpdateTrailMeshJob_PartB updateTrailMeshJobB = new UpdateTrailMeshJob_PartB
+                {
+                    mPoints = this.mPointList,
+                    mHeadArray = this.mHeadArray,
+                    discontinuities = this.discontinuitiesNative,
 
-                //this.mUpdateJobHandle.Complete();
-                //OutputJobResult();
+                    vertices = this.verticesNative,
+                    tangents = this.tangentsNative,
+                    vertColors = this.vertColorsNative,
+                    uvs = this.uvsNative,
+                    tris = this.trisNative,
+                    normals = this.normalsNative,
+
+                    lengthThickColor = lengthThickColor,
+                    timeThickColor = timeThickColor,
+                    lengthThickCurve = lengthThickCurve,
+                    timeThickCurve = timeThickCurve
+                };
+
+                this.mLateUpdateJobHandle = updateTrailMeshJobB.Schedule(this.mLateUpdateJobHandle);
+                this.isBusyLateUpdateJH = true;
             }
 
-            //UpdateTrailMeshJob_PartA updateTrailMeshJobA = new UpdateTrailMeshJob_PartA
-            //{
-            //    mPoints = this.mPointList,
-            //    mHeadArray = this.mHeadArray,
-            //    discontinuities = this.discontinuitiesNative,
-            //    normalizedLengthList = normalizedLengthList,
-            //    normalizedLifeList = normalizedLifeList,
-            //};
-
-            //updateTrailMeshJobA.Schedule().Complete();
-            this.mUpdateJobHandle = this.updateTrailMeshJobA.Schedule(this.mUpdateJobHandle);
-            this.mUpdateJobHandle.Complete();
-            //OutputJobResult();
-
-
-
-
-            for (int i = 0; i < normalizedLifeList.Length; i++)
+            if (!this.isBusyUpdateJH && this.mLateUpdateJobHandle.IsCompleted)
             {
-                Color timeColor = this.colorOverTime.Evaluate(normalizedLifeList[i]);
-                timeThickColor.Add(timeColor);
-                float timeCurveValue = this.thicknessOverTime.Evaluate(normalizedLifeList[i]);
-                timeThickCurve.Add(timeCurveValue);
+                //Debug.Log("mUpdateJobHandle");
+                this.mLateUpdateJobHandle.Complete();
+                this.isBusyLateUpdateJH = false;
+
+
+                lengthThickColor.Clear();
+                lengthThickCurve.Clear();
+                timeThickColor.Clear();
+                timeThickCurve.Clear();
+
+
+
+                this.ClearMeshData();
+
+                for (int i = 0; i < verticesNative.Length; i++)
+                {
+                    vertices.Add(verticesNative[i]);
+                }
+
+                for (int i = 0; i < tangentsNative.Length; i++)
+                {
+                    tangents.Add(tangentsNative[i]);
+                }
+
+
+                for (int i = 0; i < normalsNative.Length; i++)
+                {
+                    normals.Add(normalsNative[i]);
+                }
+
+                for (int i = 0; i < vertColorsNative.Length; i++)
+                {
+                    vertColors.Add(vertColorsNative[i]);
+                }
+
+                for (int i = 0; i < uvsNative.Length; i++)
+                {
+                    uvs.Add(uvsNative[i]);
+                }
+
+                for (int i = 0; i < trisNative.Length; i++)
+                {
+                    tris.Add(trisNative[i]);
+                }
+
+
+
+
+
+                mesh_.SetVertices(vertices);
+                mesh_.SetNormals(normals);
+                mesh_.SetTangents(tangents);
+                mesh_.SetColors(vertColors);
+                mesh_.SetUVs(0, uvs);
+                mesh_.SetTriangles(tris, 0, true);
+
+
+                RenderMesh(curCamera);
+
+
+                OutputJobResult();
+
+                FillJobifyVariables();
+
+                UpdateVelocityJob updateVelocityJob = new UpdateVelocityJob
+                {
+                    mHeadArray = this.mHeadArray,
+                };
+
+                this.mUpdateJobHandle = updateVelocityJob.Schedule(this.mUpdateJobHandle);
+
+                EmissionStepJob emissionStepJob = new EmissionStepJob
+                {
+                    mHeadArray = this.mHeadArray,
+                    mPoints = this.mPointList
+                };
+
+                this.mUpdateJobHandle = emissionStepJob.Schedule(this.mUpdateJobHandle);
+
+                SnapLastPointToTransformJob snapLastPointJob = new SnapLastPointToTransformJob
+                {
+                    mHeadArray = this.mHeadArray,
+                    mPoints = this.mPointList
+                };
+
+                this.mUpdateJobHandle = snapLastPointJob.Schedule(this.mUpdateJobHandle);
+
+                UpdatePointsLifecycleJob updatePointsLifecycle = new UpdatePointsLifecycleJob
+                {
+                    mPoints = this.mPointList,
+                    mHeadArray = this.mHeadArray
+                };
+
+                this.mUpdateJobHandle = updatePointsLifecycle.Schedule(this.mUpdateJobHandle);
+
+                UpdateTrailMeshJob_PartA updateTrailMeshJobA = new UpdateTrailMeshJob_PartA
+                {
+                    mPoints = this.mPointList,
+                    mHeadArray = this.mHeadArray,
+                    discontinuities = this.discontinuitiesNative,
+                    normalizedLengthList = normalizedLengthList,
+                    normalizedLifeList = normalizedLifeList,
+                };
+                this.mUpdateJobHandle = updateTrailMeshJobA.Schedule(this.mUpdateJobHandle);
+                this.isBusyUpdateJH = true;
+
             }
 
-            for (int i = 0; i < normalizedLengthList.Length; i++)
-            {
-                Color lengthColor = this.colorOverLenght.Evaluate(normalizedLengthList[i]);
-                lengthThickColor.Add(lengthColor);
-                float lengthCurveValue = this.thicknessOverLenght.Evaluate(normalizedLengthList[i]);
-                lengthThickCurve.Add(lengthCurveValue);
-            }
-
-
-            normalizedLengthList.Clear();
-            normalizedLifeList.Clear();
-
-
-            //UpdateTrailMeshJob_PartB updateTrailMeshJobB = new UpdateTrailMeshJob_PartB
-            //{
-            //    mPoints = this.mPointList,
-            //    mHeadArray = this.mHeadArray,
-            //    discontinuities = this.discontinuitiesNative,
-
-            //    vertices = this.verticesNative,
-            //    tangents = this.tangentsNative,
-            //    vertColors = this.vertColorsNative,
-            //    uvs = this.uvsNative,
-            //    tris = this.trisNative,
-            //    normals = this.normalsNative,
-
-            //    lengthThickColor = lengthThickColor,
-            //    timeThickColor = timeThickColor,
-            //    lengthThickCurve = lengthThickCurve,
-            //    timeThickCurve = timeThickCurve
-            //};
-
-            this.updateTrailMeshJobB.Schedule().Complete();
-            //this.mUpdateJobHandle = updateTrailMeshJobB.Schedule(this.mUpdateJobHandle);
-
-
-            lengthThickColor.Clear();
-            lengthThickCurve.Clear();
-            timeThickColor.Clear();
-            timeThickCurve.Clear();
 
 
 
-            this.ClearMeshData();
-
-            for (int i = 0; i < verticesNative.Length; i++)
-            {
-                vertices.Add(verticesNative[i]);
-            }
-
-            for (int i = 0; i < tangentsNative.Length; i++)
-            {
-                tangents.Add(tangentsNative[i]);
-            }
-
-
-            for (int i = 0; i < normalsNative.Length; i++)
-            {
-                normals.Add(normalsNative[i]);
-            }
-
-            for (int i = 0; i < vertColorsNative.Length; i++)
-            {
-                vertColors.Add(vertColorsNative[i]);
-            }
-
-            for (int i = 0; i < uvsNative.Length; i++)
-            {
-                uvs.Add(uvsNative[i]);
-            }
-
-            for (int i = 0; i < trisNative.Length; i++)
-            {
-                tris.Add(trisNative[i]);
-            }
 
 
 
-            mesh_.SetVertices(vertices);
-            mesh_.SetNormals(normals);
-            mesh_.SetTangents(tangents);
-            mesh_.SetColors(vertColors);
-            mesh_.SetUVs(0, uvs);
-            mesh_.SetTriangles(tris, 0, true);
 
-            //mesh_.SetVertices(verticesNative.ToArray());
-            //mesh_.SetNormals(normalsNative.ToArray());
-            //mesh_.SetTangents(tangentsNative.ToArray());
-            //mesh_.SetColors(vertColorsNative.ToArray());
-            //mesh_.SetUVs(0, uvsNative.ToArray());
-            //mesh_.SetTriangles(trisNative.ToArray(), 0, true);
 
-            RenderMesh(curCamera);
-            
+
+
+
+
+
+
+
 
         }
 
@@ -1513,180 +1486,182 @@ namespace AraJob
         }
 
 
-        #region 丢弃
-        //[BurstCompile]
-        //public struct PhysicsStepIJob : IJob
-        //{
-        //    public NativeList<Point> PointList;
-        //    public NativeArray<Head> mHeadArray;
-        //    //public Vector3 gravity;
-        //    //public float velocity_scale;
-        //    //public float timestep;
-
-        //    public void Execute()
-        //    {
-        //        float velocity_scale = Mathf.Pow(1 - Mathf.Clamp01(mHeadArray[0].damping), mHeadArray[0].timestep);
-        //        for (int i = 0; i < PointList.Length; ++i)
-        //        {
-
-        //            Point point = PointList[i];
-
-        //            // apply gravity and external forces:
-        //            point.velocity += mHeadArray[0].gravity * mHeadArray[0].timestep;
-        //            point.velocity *= velocity_scale;
-
-        //            // integrate velocity:
-        //            point.position += point.velocity * mHeadArray[0].timestep;
-
-        //            PointList[i] = point;
-        //        }
-        //    }
-        //}
-
-        //[BurstCompile]
-        //public struct UpdateVelocityJob : IJob
-        //{
-        //    //public Vector3 position;  // transform.position
-        //    //public Vector3 prevPosition;
-        //    //public float DeltaTime;
-        //    //public Vector3 velocity;
-        //    //public float speed;
-        //    //public float velocitySmoothing;
-
-        //    public NativeArray<Head> mHeadArray;
-        //    public void Execute()
-        //    {
-        //        Head rHead = mHeadArray[0];
-        //        if (rHead.DeltaTime > 0)
-        //        {
-        //            rHead.velocity = Vector3.Lerp((rHead.position - rHead.prevPosition) / rHead.DeltaTime, rHead.velocity, rHead.velocitySmoothing);
-        //            rHead.speed = rHead.velocity.magnitude;
-        //        }
-        //        rHead.prevPosition = rHead.position;
-        //        mHeadArray[0] = rHead;
-        //    }
-        //}
-
-        //[BurstCompile]
-        //public struct EmissionStepJob : IJob
-        //{
-        //    public NativeArray<Head> mHeadArray;
-        //    public NativeList<Point> mPoints;
-
-        //    public void Execute()
-        //    {
-        //        Head rHead = mHeadArray[0];
-
-        //        // Acumulate the amount of time passed:
-        //        rHead.accumTime += rHead.time;
-        //        // If enough time has passed since the last emission (>= timeInterval), consider emitting new points.
-        //        if (rHead.accumTime >= rHead.timeInterval)
-        //        {
-        //            if (rHead.emit)
-        //            {
-        //                // Select the emission position, depending on the simulation space:
-        //                Vector3 position = rHead.space == Space.Self ? rHead.localPosition : rHead.position;
-        //                // If there's at least 1 point and it is not far enough from the current position, don't spawn any new points this frame.
-        //                if (mPoints.Length <= 1 || Vector3.Distance(position, mPoints[mPoints.Length - 2].position) >= rHead.minDistance)
-        //                {
-        //                    mPoints.Add(new Point(position, rHead.initialVelocity + rHead.velocity * rHead.inertia, rHead.tangent, rHead.normal, rHead.initialColor, rHead.initialThickness, rHead.time));
-        //                    rHead.accumTime = 0;
-        //                }
-        //            }
-        //        }
-        //        mHeadArray[0] = rHead;
-        //    }
-        //}
-
-        //[BurstCompile]
-        //public struct SnapLastPointToTransformJob : IJob
-        //{
-        //    public NativeArray<Head> mHeadArray;
-        //    public NativeList<Point> mPoints;
-        //    public void Execute()
-        //    {
-        //        if (mPoints.Length > 0)
-        //        {
-
-        //            Point lastPoint = mPoints[mPoints.Length - 1];
-
-        //            // if we are not emitting, the last point is a discontinuity.
-        //            if (!mHeadArray[0].emit)
-        //                lastPoint.discontinuous = true;
-
-        //            // if the point is discontinuous, move and orient it according to the transform.
-        //            if (!lastPoint.discontinuous)
-        //            {
-        //                lastPoint.position = mHeadArray[0].space == Space.Self ? mHeadArray[0].localPosition : mHeadArray[0].position;
-        //                lastPoint.normal = mHeadArray[0].normal;
-        //                lastPoint.tangent = mHeadArray[0].tangent;
-        //            }
-
-        //            mPoints[mPoints.Length - 1] = lastPoint;
-        //        }
-        //    }
-        //}
-
-        //[BurstCompile]
-        //public struct UpdatePointsLifecycleJob : IJob
-        //{
-        //    public NativeList<Point> mPoints;
-        //    public NativeArray<Head> mHeadArray;
 
 
-        //    //public void Execute(int index)
-        //    //{
-        //    //    Head rHead = mHeadArray[0];
-        //    //    Point point = PointList[index];
-        //    //    point.life -= rHead.DeltaTime;
-        //    //    PointList[index] = point;
 
-        //    //    if (point.life <= 0)
-        //    //    {
-        //    //        // Unsmoothed trails delete points as soon as they die.
-        //    //        if (rHead.smoothness <= 1)
-        //    //        {
-        //    //            PointList.RemoveAt(index);
-        //    //        }
-        //    //        // Smoothed trails however, should wait until the next 2 points are dead too. This ensures spline continuity.
-        //    //        else
-        //    //        {
-        //    //            if (PointList[Mathf.Min(index + 1, PointList.Length - 1)].life <= 0 &&
-        //    //                PointList[Mathf.Min(index + 2, PointList.Length - 1)].life <= 0)
-        //    //                PointList.RemoveAt(index);
-        //    //        }
-        //    //    }
-        //    //}
+        [BurstCompile]
+        public struct PhysicsStepIJob : IJob
+        {
+            public NativeList<Point> PointList;
+            public NativeArray<Head> mHeadArray;
 
-        //    public void Execute()
-        //    {
-        //        for (int i = mPoints.Length - 1; i >= 0; --i)
-        //        {
+            public void Execute()
+            {
+                float velocity_scale = Mathf.Pow(1 - Mathf.Clamp01(mHeadArray[0].damping), mHeadArray[0].timestep);
+                for (int i = 0; i < PointList.Length; ++i)
+                {
 
-        //            Point point = mPoints[i];
-        //            point.life -= mHeadArray[0].DeltaTime;
-        //            mPoints[i] = point;
+                    Point point = PointList[i];
 
-        //            if (point.life <= 0)
-        //            {
+                    // apply gravity and external forces:
+                    point.velocity += mHeadArray[0].gravity * mHeadArray[0].timestep;
+                    point.velocity *= velocity_scale;
 
-        //                // Unsmoothed trails delete points as soon as they die.
-        //                if (mHeadArray[0].smoothness <= 1)
-        //                {
-        //                    mPoints.RemoveAt(i);
-        //                }
-        //                // Smoothed trails however, should wait until the next 2 points are dead too. This ensures spline continuity.
-        //                else
-        //                {
-        //                    if (mPoints[Mathf.Min(i + 1, mPoints.Length - 1)].life <= 0 &&
-        //                        mPoints[Mathf.Min(i + 2, mPoints.Length - 1)].life <= 0)
-        //                        mPoints.RemoveAt(i);
-        //                }
+                    // integrate velocity:
+                    point.position += point.velocity * mHeadArray[0].timestep;
 
-        //            }
-        //        }
-        //    }
-        //}
+                    PointList[i] = point;
+                }
+            }
+        }
+
+        [BurstCompile]
+        public struct UpdateVelocityJob : IJob
+        {
+            //public Vector3 position;  // transform.position
+            //public Vector3 prevPosition;
+            //public float DeltaTime;
+            //public Vector3 velocity;
+            //public float speed;
+            //public float velocitySmoothing;
+
+            public NativeArray<Head> mHeadArray;
+            public void Execute()
+            {
+                Head rHead = mHeadArray[0];
+                if (rHead.DeltaTime > 0)
+                {
+                    rHead.velocity = Vector3.Lerp((rHead.position - rHead.prevPosition) / rHead.DeltaTime, rHead.velocity, rHead.velocitySmoothing);
+                    rHead.speed = rHead.velocity.magnitude;
+                }
+                rHead.prevPosition = rHead.position;
+                mHeadArray[0] = rHead;
+            }
+        }
+
+        [BurstCompile]
+        public struct EmissionStepJob : IJob
+        {
+            public NativeArray<Head> mHeadArray;
+            public NativeList<Point> mPoints;
+
+            public void Execute()
+            {
+                Head rHead = mHeadArray[0];
+
+                // Acumulate the amount of time passed:
+                rHead.accumTime += rHead.time;
+                //Debug.Log($"joB accumTIme {rHead.accumTime}  {rHead.time}   {rHead.timeInterval}");
+                // If enough time has passed since the last emission (>= timeInterval), consider emitting new points.
+                if (rHead.accumTime >= rHead.timeInterval)
+                {
+                    if (rHead.emit)
+                    {
+                        // Select the emission position, depending on the simulation space:
+                        Vector3 position = rHead.space == Space.Self ? rHead.localPosition : rHead.position;
+                        // If there's at least 1 point and it is not far enough from the current position, don't spawn any new points this frame.
+                        if (mPoints.Length <= 1 || Vector3.Distance(position, mPoints[mPoints.Length - 2].position) >= rHead.minDistance)
+                        {
+                            mPoints.Add(new Point(position, rHead.initialVelocity + rHead.velocity * rHead.inertia, rHead.tangent, rHead.normal, rHead.initialColor, rHead.initialThickness, rHead.time));
+                            rHead.accumTime = 0;
+                            //Debug.Log($"Tag {mPoints.Length}");
+                        }
+                    }
+                }
+                mHeadArray[0] = rHead;
+                //Debug.Log($"JOb mHeadArray[0] { mHeadArray[0].accumTime}  { mHeadArray[0].time}   { mHeadArray[0].timeInterval}");
+            }
+        }
+
+        [BurstCompile]
+        public struct SnapLastPointToTransformJob : IJob
+        {
+            public NativeArray<Head> mHeadArray;
+            public NativeList<Point> mPoints;
+            public void Execute()
+            {
+                if (mPoints.Length > 0)
+                {
+
+                    Point lastPoint = mPoints[mPoints.Length - 1];
+
+                    // if we are not emitting, the last point is a discontinuity.
+                    if (!mHeadArray[0].emit)
+                        lastPoint.discontinuous = true;
+
+                    // if the point is discontinuous, move and orient it according to the transform.
+                    if (!lastPoint.discontinuous)
+                    {
+                        lastPoint.position = mHeadArray[0].space == Space.Self ? mHeadArray[0].localPosition : mHeadArray[0].position;
+                        lastPoint.normal = mHeadArray[0].normal;
+                        lastPoint.tangent = mHeadArray[0].tangent;
+                    }
+
+                    mPoints[mPoints.Length - 1] = lastPoint;
+                }
+            }
+        }
+
+        [BurstCompile]
+        public struct UpdatePointsLifecycleJob : IJob
+        {
+            public NativeList<Point> mPoints;
+            public NativeArray<Head> mHeadArray;
+
+
+            //public void Execute(int index)
+            //{
+            //    Head rHead = mHeadArray[0];
+            //    Point point = PointList[index];
+            //    point.life -= rHead.DeltaTime;
+            //    PointList[index] = point;
+
+            //    if (point.life <= 0)
+            //    {
+            //        // Unsmoothed trails delete points as soon as they die.
+            //        if (rHead.smoothness <= 1)
+            //        {
+            //            PointList.RemoveAt(index);
+            //        }
+            //        // Smoothed trails however, should wait until the next 2 points are dead too. This ensures spline continuity.
+            //        else
+            //        {
+            //            if (PointList[Mathf.Min(index + 1, PointList.Length - 1)].life <= 0 &&
+            //                PointList[Mathf.Min(index + 2, PointList.Length - 1)].life <= 0)
+            //                PointList.RemoveAt(index);
+            //        }
+            //    }
+            //}
+
+            public void Execute()
+            {
+                for (int i = mPoints.Length - 1; i >= 0; --i)
+                {
+
+                    Point point = mPoints[i];
+                    point.life -= mHeadArray[0].DeltaTime;
+                    mPoints[i] = point;
+
+                    if (point.life <= 0)
+                    {
+
+                        // Unsmoothed trails delete points as soon as they die.
+                        if (mHeadArray[0].smoothness <= 1)
+                        {
+                            mPoints.RemoveAt(i);
+                        }
+                        // Smoothed trails however, should wait until the next 2 points are dead too. This ensures spline continuity.
+                        else
+                        {
+                            if (mPoints[Mathf.Min(i + 1, mPoints.Length - 1)].life <= 0 &&
+                                mPoints[Mathf.Min(i + 2, mPoints.Length - 1)].life <= 0)
+                                mPoints.RemoveAt(i);
+                        }
+
+                    }
+                }
+            }
+        }
 
         //[BurstCompile]
         //public struct UpdateTrailMeshJob : IJob
@@ -2037,10 +2012,6 @@ namespace AraJob
         //        tris.Clear();
         //    }
         //}
-        #endregion
-
-
-
 
         [BurstCompile]
         public struct UpdateTrailMeshJob_PartA : IJob
@@ -2051,89 +2022,17 @@ namespace AraJob
             public NativeList<float> normalizedLengthList;
             public NativeList<float> normalizedLifeList;
 
-
+            //public NativeList<Vector3> vertices;
+            //public NativeList<Vector3> tangents;
+            //public NativeList<Color> vertColors;
+            //public NativeList<Vector3> uvs;
+            //public NativeList<int> tris;
+            //public NativeList<Vector3> normals;
 
 
 
             public void Execute()
             {
-                Head rHead = mHeadArray[0];
-                if (rHead.DeltaTime > 0)
-                {
-                    rHead.velocity = Vector3.Lerp((rHead.position - rHead.prevPosition) / rHead.DeltaTime, rHead.velocity, rHead.velocitySmoothing);
-                    rHead.speed = rHead.velocity.magnitude;
-                }
-                rHead.prevPosition = rHead.position;
- 
-
-                // Acumulate the amount of time passed:
-                rHead.accumTime += rHead.time;
-                // If enough time has passed since the last emission (>= timeInterval), consider emitting new points.
-                if (rHead.accumTime >= rHead.timeInterval)
-                {
-                    if (rHead.emit)
-                    {
-                        // Select the emission position, depending on the simulation space:
-                        Vector3 position = rHead.space == Space.Self ? rHead.localPosition : rHead.position;
-                        // If there's at least 1 point and it is not far enough from the current position, don't spawn any new points this frame.
-                        if (mPoints.Length <= 1 || Vector3.Distance(position, mPoints[mPoints.Length - 2].position) >= rHead.minDistance)
-                        {
-                            mPoints.Add(new Point(position, rHead.initialVelocity + rHead.velocity * rHead.inertia, rHead.tangent, rHead.normal, rHead.initialColor, rHead.initialThickness, rHead.time));
-                            rHead.accumTime = 0;
-                        }
-                    }
-                }
-                mHeadArray[0] = rHead;
-
-                if (mPoints.Length > 0)
-                {
-
-                    Point lastPoint = mPoints[mPoints.Length - 1];
-
-                    // if we are not emitting, the last point is a discontinuity.
-                    if (!mHeadArray[0].emit)
-                        lastPoint.discontinuous = true;
-
-                    // if the point is discontinuous, move and orient it according to the transform.
-                    if (!lastPoint.discontinuous)
-                    {
-                        lastPoint.position = mHeadArray[0].space == Space.Self ? mHeadArray[0].localPosition : mHeadArray[0].position;
-                        lastPoint.normal = mHeadArray[0].normal;
-                        lastPoint.tangent = mHeadArray[0].tangent;
-                    }
-
-                    mPoints[mPoints.Length - 1] = lastPoint;
-                }
-
-
-                for (int i = mPoints.Length - 1; i >= 0; --i)
-                {
-
-                    Point point = mPoints[i];
-                    point.life -= mHeadArray[0].DeltaTime;
-                    mPoints[i] = point;
-
-                    if (point.life <= 0)
-                    {
-
-                        // Unsmoothed trails delete points as soon as they die.
-                        if (mHeadArray[0].smoothness <= 1)
-                        {
-                            mPoints.RemoveAt(i);
-                        }
-                        // Smoothed trails however, should wait until the next 2 points are dead too. This ensures spline continuity.
-                        else
-                        {
-                            if (mPoints[Mathf.Min(i + 1, mPoints.Length - 1)].life <= 0 &&
-                                mPoints[Mathf.Min(i + 2, mPoints.Length - 1)].life <= 0)
-                                mPoints.RemoveAt(i);
-                        }
-
-                    }
-                }
-
-
-
                 normalizedLengthList.Clear();
                 normalizedLifeList.Clear();
 
@@ -2161,7 +2060,6 @@ namespace AraJob
                     //RenderMesh(cam);
                 }
             }
-
 
             private void UpdateSegmentMesh(NativeList<Point> input, int start, int end, Vector3 localCamPosition)
             {
@@ -2211,8 +2109,6 @@ namespace AraJob
 
             }
 
-
-
             private NativeList<Point> GetRenderablePoints(NativeList<Point> input, int start, int end)
             {
                 Head rHead = mHeadArray[0];
@@ -2260,8 +2156,6 @@ namespace AraJob
                 return renderablePoints;
             }
 
-
-
             private float GetLenght(NativeList<Point> input)
             {
 
@@ -2275,6 +2169,170 @@ namespace AraJob
         }
 
 
+        //[BurstCompile]
+        //public struct UpdateTrailMeshJob_PartA : IJob
+        //{
+        //    public NativeList<Point> mPoints;
+        //    public NativeArray<Head> mHeadArray;
+        //    public NativeList<int> discontinuities;
+        //    public NativeList<float> normalizedLengthList;
+        //    public NativeList<float> normalizedLifeList;
+
+        //    //public NativeList<Vector3> vertices;
+        //    //public NativeList<Vector3> tangents;
+        //    //public NativeList<Color> vertColors;
+        //    //public NativeList<Vector3> uvs;
+        //    //public NativeList<int> tris;
+        //    //public NativeList<Vector3> normals;
+
+
+
+        //    public void Execute()
+        //    {
+        //        normalizedLengthList.Clear();
+        //        normalizedLifeList.Clear();
+
+        //        // We need at least two points to create a trail mesh.
+        //        if (mPoints.Length > 1)
+        //        {
+
+        //            //Vector3 localCamPosition = rHead.space == Space.Self && transform.parent != null ? transform.parent.InverseTransformPoint(cam.transform.position) : cam.transform.position;
+
+        //            // get discontinuous point indices:
+        //            discontinuities.Clear();
+        //            for (int i = 0; i < mPoints.Length; ++i)
+        //                if (mPoints[i].discontinuous || i == mPoints.Length - 1) discontinuities.Add(i);
+
+        //            // generate mesh for each trail segment:
+        //            int start = 0;
+        //            for (int i = 0; i < discontinuities.Length; ++i)
+        //            {
+        //                UpdateSegmentMesh(mPoints, start, discontinuities[i], mHeadArray[0].localCamPosition);
+        //                start = discontinuities[i] + 1;
+        //            }
+
+        //            //CommitMeshData();
+
+        //            //RenderMesh(cam);
+        //        }
+        //    }
+
+
+        //    private void UpdateSegmentMesh(NativeList<Point> input, int start, int end, Vector3 localCamPosition)
+        //    {
+        //        Head rHead = mHeadArray[0];
+        //        // Get a list of the actual points to render: either the original, unsmoothed points or the smoothed curve.
+        //        NativeList<Point> trail = GetRenderablePoints(input, start, end);
+
+        //        if (trail.Length > 1)
+        //        {
+
+        //            float lenght = Mathf.Max(GetLenght(trail), 0.00001f);
+        //            float partialLenght = 0;
+        //            Color vertexColor;
+
+        //            int nextIndex;
+        //            int prevIndex;
+        //            Vector3 nextV;
+        //            Vector3 prevV;
+        //            Point curPoint;
+        //            for (int i = trail.Length - 1; i >= 0; --i)
+        //            {
+
+        //                curPoint = trail[i];
+        //                // Calculate next and previous point indices:
+        //                nextIndex = Mathf.Max(i - 1, 0);
+        //                prevIndex = Mathf.Min(i + 1, trail.Length - 1);
+
+        //                // Calculate next and previous trail vectors:
+        //                nextV = trail[nextIndex].position - curPoint.position;
+        //                prevV = curPoint.position - trail[prevIndex].position;
+        //                float sectionLength = nextV.magnitude;
+
+        //                nextV.Normalize();
+        //                prevV.Normalize();
+
+        //                // Calculate this point's normalized (0,1) lenght and life.
+        //                float normalizedLength = partialLenght / lenght;
+        //                float normalizedLife = Mathf.Clamp01(1 - curPoint.life / rHead.time);
+        //                partialLenght += sectionLength;
+
+        //                //TODO
+        //                normalizedLengthList.Add(normalizedLength);
+        //                normalizedLifeList.Add(normalizedLife);
+
+        //            }
+        //        }
+
+        //    }
+
+
+
+        //    private NativeList<Point> GetRenderablePoints(NativeList<Point> input, int start, int end)
+        //    {
+        //        Head rHead = mHeadArray[0];
+        //        NativeList<Point> points = mPoints;
+        //        //renderablePoints.Clear();
+
+        //        NativeList<Point> renderablePoints = new NativeList<Point>(Allocator.Temp);
+
+        //        if (rHead.smoothness <= 1)
+        //        {
+        //            for (int i = start; i <= end; ++i)
+        //                renderablePoints.Add(points[i]);
+        //            return renderablePoints;
+        //        }
+
+        //        // calculate sample size in normalized coordinates:
+        //        float samplesize = 1.0f / rHead.smoothness;
+
+        //        for (int i = start; i < end; ++i)
+        //        {
+
+        //            // Extrapolate first and last curve control points:
+        //            Point firstPoint = i == start ? points[start] + (points[start] - points[i + 1]) : points[i - 1];
+        //            Point lastPoint = i == end - 1 ? points[end] + (points[end] - points[end - 1]) : points[i + 2];
+
+        //            for (int j = 0; j < rHead.smoothness; ++j)
+        //            {
+
+        //                float t = j * samplesize;
+        //                Point interpolated = Point.Interpolate(firstPoint,
+        //                                                       points[i],
+        //                                                       points[i + 1],
+        //                                                       lastPoint, t);
+
+        //                // only if the interpolated point is alive, we add it to the list of points to render.
+        //                if (interpolated.life > 0)
+        //                    renderablePoints.Add(interpolated);
+        //            }
+
+        //        }
+
+        //        if (points[end].life > 0)
+        //            renderablePoints.Add(points[end]);
+
+        //        return renderablePoints;
+        //    }
+
+
+
+        //    private float GetLenght(NativeList<Point> input)
+        //    {
+
+        //        float lenght = 0;
+        //        for (int i = 0; i < input.Length - 1; ++i)
+        //            lenght += Vector3.Distance(input[i].position, input[i + 1].position);
+        //        return lenght;
+
+        //    }
+
+        //}
+
+
+
+
+
         [BurstCompile]
         public struct UpdateTrailMeshJob_PartB : IJob
         {
@@ -2285,7 +2343,7 @@ namespace AraJob
             public NativeList<int> discontinuities;
 
             public NativeList<Vector3> vertices;
-            public NativeList<Vector4> tangents;
+            public NativeList<Vector3> tangents;
             public NativeList<Color> vertColors;
             public NativeList<Vector3> uvs;
             public NativeList<int> tris;
