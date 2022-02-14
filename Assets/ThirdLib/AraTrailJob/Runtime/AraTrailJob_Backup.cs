@@ -1072,6 +1072,13 @@ namespace AraJob
         public NativeList<int> trisNative;
         public NativeList<Vector3> normalsNative;
 
+        NativeList<float> normalizedLengthList;
+        NativeList<float> normalizedLifeList;
+        NativeList<Color> lengthThickColor;
+        NativeList<Color> timeThickColor;
+        NativeList<float> lengthThickCurve;
+        NativeList<float> timeThickCurve;
+
         //public NativeArray<Keyframe> mLengthThickCurve;
         //public NativeArray<GradientColorKey> mLengthThickColorKeys;
         //public NativeArray<GradientAlphaKey> mLengthThickAlphaKeys;
@@ -1093,6 +1100,13 @@ namespace AraJob
             this.uvsNative = new NativeList<Vector3>(Allocator.Persistent);
             this.trisNative = new NativeList<int>(Allocator.Persistent);
             this.normalsNative = new NativeList<Vector3>(Allocator.Persistent);
+
+            normalizedLengthList = new NativeList<float>(Allocator.Persistent);
+            normalizedLifeList = new NativeList<float>(Allocator.Persistent);
+            lengthThickColor = new NativeList<Color>(Allocator.Persistent);
+            timeThickColor = new NativeList<Color>(Allocator.Persistent);
+            lengthThickCurve = new NativeList<float>(Allocator.Persistent);
+            timeThickCurve = new NativeList<float>(Allocator.Persistent);
 
 
             //this.mLengthThickCurve = new NativeArray<Keyframe>(this.thicknessOverLenght.keys, Allocator.Persistent);
@@ -1210,6 +1224,13 @@ namespace AraJob
             if (this.normalsNative.IsCreated)
                 this.normalsNative.Dispose();
 
+            normalizedLengthList.Dispose();
+            normalizedLifeList.Dispose();
+            lengthThickColor.Dispose();
+            timeThickColor.Dispose();
+            lengthThickCurve.Dispose();
+            timeThickCurve.Dispose();
+
             //if (this.mLengthThickCurve.IsCreated)
             //{
             //    this.mLengthThickCurve.Dispose();
@@ -1280,12 +1301,11 @@ namespace AraJob
 
             this.mUpdateJobHandle = updatePointsLifecycle.Schedule(this.mUpdateJobHandle);
 
-            this.mUpdateJobHandle.Complete();
-            OutputJobResult();
+            //this.mUpdateJobHandle.Complete();
+            //OutputJobResult();
 
 
-            NativeList<float> normalizedLengthList = new NativeList<float>(Allocator.TempJob);
-            NativeList<float> normalizedLifeList = new NativeList<float>(Allocator.TempJob);
+
 
             UpdateTrailMeshJob_PartA updateTrailMeshJobA = new UpdateTrailMeshJob_PartA
             {
@@ -1296,16 +1316,13 @@ namespace AraJob
                 normalizedLifeList = normalizedLifeList,
             };
 
-            updateTrailMeshJobA.Schedule().Complete();
-            //this.mUpdateJobHandle = updateTrailMeshJobA.Schedule();
+            //updateTrailMeshJobA.Schedule().Complete();
+            this.mUpdateJobHandle = updateTrailMeshJobA.Schedule(this.mUpdateJobHandle);
+            this.mUpdateJobHandle.Complete();
+            OutputJobResult();
 
-            //this.mUpdateJobHandle.Complete();
-            //OutputJobResult();
 
-            NativeList<Color> lengthThickColor = new NativeList<Color>(Allocator.TempJob);
-            NativeList<Color> timeThickColor = new NativeList<Color>(Allocator.TempJob);
-            NativeList<float> lengthThickCurve = new NativeList<float>(Allocator.TempJob);
-            NativeList<float> timeThickCurve = new NativeList<float>(Allocator.TempJob);
+
 
             for (int i = 0; i < normalizedLifeList.Length; i++)
             {
@@ -1324,8 +1341,8 @@ namespace AraJob
             }
 
 
-            normalizedLengthList.Dispose();
-            normalizedLifeList.Dispose();
+            normalizedLengthList.Clear();
+            normalizedLifeList.Clear();
 
 
             UpdateTrailMeshJob_PartB updateTrailMeshJobB = new UpdateTrailMeshJob_PartB
@@ -1348,13 +1365,13 @@ namespace AraJob
             };
 
             updateTrailMeshJobB.Schedule().Complete();
+            //this.mUpdateJobHandle = updateTrailMeshJobB.Schedule(this.mUpdateJobHandle);
 
 
-
-            lengthThickColor.Dispose();
-            lengthThickCurve.Dispose();
-            timeThickColor.Dispose();
-            timeThickCurve.Dispose();
+            lengthThickColor.Clear();
+            lengthThickCurve.Clear();
+            timeThickColor.Clear();
+            timeThickCurve.Clear();
 
 
 
