@@ -1325,6 +1325,8 @@ namespace AraJob
 
                     this.mUpdateJobHandle = this.updateTrailMeshJobA.Schedule(this.mUpdateJobHandle);
                     this.step = Step.step1;
+
+                    RenderMesh(curCamera);
                     break;
                 case Step.step1:
 
@@ -1376,6 +1378,8 @@ namespace AraJob
                         this.mLateUpdateJobHandle = this.updateTrailMeshJobB.Schedule();
                         this.step = Step.step2;
                     }
+
+                    RenderMesh(curCamera);
                     break;
                 case Step.step2:
                     if (this.mLateUpdateJobHandle.IsCompleted)
@@ -1399,25 +1403,16 @@ namespace AraJob
                         RenderMesh(curCamera);
                         this.step = Step.step0;
                     }
-
+                    else 
+                    {
+                        RenderMesh(curCamera);
+                    }
+                   
                     break;
                 default:
                     break;
             }
 
-            //if(this.step != Step.step2)
-            //{
-            //    this.mesh_.Clear();
-
-            //    mesh_.SetVertices(verticesNative.ToArray());
-            //    mesh_.SetNormals(normalsNative.ToArray());
-            //    mesh_.SetTangents(tangentsNative.ToArray());
-            //    mesh_.SetColors(vertColorsNative.ToArray());
-            //    mesh_.SetUVs(0, uvsNative.ToArray());
-            //    mesh_.SetTriangles(trisNative.ToArray(), 0, true);
-
-            //    RenderMesh(curCamera);
-            //}
         }
 
         [BurstCompile]
