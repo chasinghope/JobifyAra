@@ -1349,7 +1349,7 @@ namespace AraJob
             //updateTrailMeshJobA.Schedule().Complete();
             this.mUpdateJobHandle = this.updateTrailMeshJobA.Schedule(this.mUpdateJobHandle);
             this.mUpdateJobHandle.Complete();
-            //OutputJobResult();
+            OutputJobResult();
 
 
 
@@ -1405,54 +1405,56 @@ namespace AraJob
 
 
 
-            this.ClearMeshData();
+            this.mesh_.Clear();
+            //this.ClearMeshData();
 
-            for (int i = 0; i < verticesNative.Length; i++)
-            {
-                vertices.Add(verticesNative[i]);
-            }
+            //for (int i = 0; i < verticesNative.Length; i++)
+            //{
+            //    vertices.Add(verticesNative[i]);
+            //}
 
-            for (int i = 0; i < tangentsNative.Length; i++)
-            {
-                tangents.Add(tangentsNative[i]);
-            }
-
-
-            for (int i = 0; i < normalsNative.Length; i++)
-            {
-                normals.Add(normalsNative[i]);
-            }
-
-            for (int i = 0; i < vertColorsNative.Length; i++)
-            {
-                vertColors.Add(vertColorsNative[i]);
-            }
-
-            for (int i = 0; i < uvsNative.Length; i++)
-            {
-                uvs.Add(uvsNative[i]);
-            }
-
-            for (int i = 0; i < trisNative.Length; i++)
-            {
-                tris.Add(trisNative[i]);
-            }
+            //for (int i = 0; i < tangentsNative.Length; i++)
+            //{
+            //    tangents.Add(tangentsNative[i]);
+            //}
 
 
+            //for (int i = 0; i < normalsNative.Length; i++)
+            //{
+            //    normals.Add(normalsNative[i]);
+            //}
 
-            mesh_.SetVertices(vertices);
-            mesh_.SetNormals(normals);
-            mesh_.SetTangents(tangents);
-            mesh_.SetColors(vertColors);
-            mesh_.SetUVs(0, uvs);
-            mesh_.SetTriangles(tris, 0, true);
+            //for (int i = 0; i < vertColorsNative.Length; i++)
+            //{
+            //    vertColors.Add(vertColorsNative[i]);
+            //}
 
-            //mesh_.SetVertices(verticesNative.ToArray());
-            //mesh_.SetNormals(normalsNative.ToArray());
-            //mesh_.SetTangents(tangentsNative.ToArray());
-            //mesh_.SetColors(vertColorsNative.ToArray());
-            //mesh_.SetUVs(0, uvsNative.ToArray());
-            //mesh_.SetTriangles(trisNative.ToArray(), 0, true);
+            //for (int i = 0; i < uvsNative.Length; i++)
+            //{
+            //    uvs.Add(uvsNative[i]);
+            //}
+
+            //for (int i = 0; i < trisNative.Length; i++)
+            //{
+            //    tris.Add(trisNative[i]);
+            //}
+
+
+
+            //mesh_.SetVertices(vertices);
+            //mesh_.SetNormals(normals);
+            //mesh_.SetTangents(tangents);
+            //mesh_.SetColors(vertColors);
+            //mesh_.SetUVs(0, uvs);
+            //mesh_.SetTriangles(tris, 0, true);
+
+            mesh_.SetVertices(verticesNative.ToArray());
+            //mesh_.RecalculateBounds();
+            mesh_.SetNormals(normalsNative.ToArray());
+            mesh_.SetTangents(tangentsNative.ToArray());
+            mesh_.SetColors(vertColorsNative.ToArray());
+            mesh_.SetUVs(0, uvsNative.ToArray());
+            mesh_.SetTriangles(trisNative.ToArray(), 0, true);
 
             RenderMesh(curCamera);
             
