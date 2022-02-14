@@ -360,8 +360,6 @@ namespace AraJob
             mesh_ = new Mesh();
             mesh_.name = "ara_trail_mesh";
             mesh_.MarkDynamic();
-
-            FillJobifyVariables();
         }
 
         private void FixedUpdate()
@@ -467,7 +465,6 @@ namespace AraJob
             // destroy both the trail mesh and the hidden renderer object:
             DestroyImmediate(mesh_);
             DestoryTrailGoc();
-
         }
 
         private void OnDestroy()
@@ -1075,15 +1072,6 @@ namespace AraJob
         public NativeList<int> trisNative;
         public NativeList<Vector3> normalsNative;
 
-
-
-        NativeList<float> normalizedLengthList;
-        NativeList<float> normalizedLifeList;
-        NativeList<Color> lengthThickColor;
-        NativeList<Color> timeThickColor;
-        NativeList<float> lengthThickCurve;
-        NativeList<float> timeThickCurve;
-
         //public NativeArray<Keyframe> mLengthThickCurve;
         //public NativeArray<GradientColorKey> mLengthThickColorKeys;
         //public NativeArray<GradientAlphaKey> mLengthThickAlphaKeys;
@@ -1107,14 +1095,6 @@ namespace AraJob
             this.normalsNative = new NativeList<Vector3>(Allocator.Persistent);
 
 
-            normalizedLengthList = new NativeList<float>(Allocator.Persistent);
-            normalizedLifeList = new NativeList<float>(Allocator.Persistent);
-            lengthThickColor = new NativeList<Color>(Allocator.Persistent);
-            timeThickColor = new NativeList<Color>(Allocator.Persistent);
-            lengthThickCurve = new NativeList<float>(Allocator.Persistent);
-            timeThickCurve = new NativeList<float>(Allocator.Persistent);
-
-
             //this.mLengthThickCurve = new NativeArray<Keyframe>(this.thicknessOverLenght.keys, Allocator.Persistent);
             //this.mLengthThickColorKeys = new NativeArray<GradientColorKey>(this.colorOverLenght.colorKeys, Allocator.Persistent);
             //this.mLengthThickAlphaKeys = new NativeArray<GradientAlphaKey>(this.colorOverLenght.alphaKeys, Allocator.Persistent);
@@ -1122,7 +1102,7 @@ namespace AraJob
             //this.mTimeThickCurve = new NativeArray<Keyframe>(this.thicknessOverTime.keys, Allocator.Persistent);
             //this.mTimeThickColorKeys = new NativeArray<GradientColorKey>(this.colorOverTime.colorKeys, Allocator.Persistent);
             //this.mTimeThickAlphaKeys = new NativeArray<GradientAlphaKey>(this.colorOverTime.alphaKeys, Allocator.Persistent);
-
+            FillJobifyVariables();
         }
 
 
@@ -1194,12 +1174,12 @@ namespace AraJob
 
         private void OutputJobResult()
         {
-            //Head rHead = this.mHeadArray[0];
+            Head rHead = this.mHeadArray[0];
 
-            this.prevPosition = this.mHeadArray[0].prevPosition;
-            this.velocity = this.mHeadArray[0].velocity;
-            this.speed = this.mHeadArray[0].speed;
-            this.accumTime = this.mHeadArray[0].accumTime;
+            this.prevPosition = rHead.prevPosition;
+            this.velocity = rHead.velocity;
+            this.speed = rHead.speed;
+            this.accumTime = rHead.accumTime;
         }
 
 
@@ -1229,16 +1209,6 @@ namespace AraJob
                 this.trisNative.Dispose();
             if (this.normalsNative.IsCreated)
                 this.normalsNative.Dispose();
-
-
-
-
-            normalizedLengthList.Dispose();
-            normalizedLifeList.Dispose();
-            lengthThickColor.Dispose();
-            timeThickColor.Dispose();
-            lengthThickCurve.Dispose();
-            timeThickCurve.Dispose();
 
             //if (this.mLengthThickCurve.IsCreated)
             //{
@@ -1277,57 +1247,65 @@ namespace AraJob
             if (!this.mUpdateJobHandle.IsCompleted)
                 return;
 
-   
+            FillJobifyVariables();
+
+            UpdateVelocityJob updateVelocityJob = new UpdateVelocityJob
             {
-                FillJobifyVariables();
-                UpdateVelocityJob updateVelocityJob = new UpdateVelocityJob
-                {
-                    mHeadArray = this.mHeadArray,
-                };
+                mHeadArray = this.mHeadArray,
+            };
 
-                this.mUpdateJobHandle = updateVelocityJob.Schedule(this.mUpdateJobHandle);
+            this.mUpdateJobHandle = updateVelocityJob.Schedule(this.mUpdateJobHandle);
 
-                EmissionStepJob emissionStepJob = new EmissionStepJob
-                {
-                    mHeadArray = this.mHeadArray,
-                    mPoints = this.mPointList
-                };
+            EmissionStepJob emissionStepJob = new EmissionStepJob
+            {
+                mHeadArray = this.mHeadArray,
+                mPoints = this.mPointList
+            };
 
-                this.mUpdateJobHandle = emissionStepJob.Schedule(this.mUpdateJobHandle);
+            this.mUpdateJobHandle = emissionStepJob.Schedule(this.mUpdateJobHandle);
 
-                SnapLastPointToTransformJob snapLastPointJob = new SnapLastPointToTransformJob
-                {
-                    mHeadArray = this.mHeadArray,
-                    mPoints = this.mPointList
-                };
+            SnapLastPointToTransformJob snapLastPointJob = new SnapLastPointToTransformJob
+            {
+                mHeadArray = this.mHeadArray,
+                mPoints = this.mPointList
+            };
 
-                this.mUpdateJobHandle = snapLastPointJob.Schedule(this.mUpdateJobHandle);
+            this.mUpdateJobHandle = snapLastPointJob.Schedule(this.mUpdateJobHandle);
 
-                UpdatePointsLifecycleJob updatePointsLifecycle = new UpdatePointsLifecycleJob
-                {
-                    PointList = this.mPointList,
-                    mHeadArray = this.mHeadArray
-                };
+            UpdatePointsLifecycleJob updatePointsLifecycle = new UpdatePointsLifecycleJob
+            {
+                PointList = this.mPointList,
+                mHeadArray = this.mHeadArray
+            };
 
-                this.mUpdateJobHandle = updatePointsLifecycle.Schedule(this.mUpdateJobHandle);
-
-                UpdateTrailMeshJob_PartA updateTrailMeshJobA = new UpdateTrailMeshJob_PartA
-                {
-                    mPoints = this.mPointList,
-                    mHeadArray = this.mHeadArray,
-                    discontinuities = this.discontinuitiesNative,
-                    normalizedLengthList = normalizedLengthList,
-                    normalizedLifeList = normalizedLifeList,
-                };
-
-                this.mUpdateJobHandle = updateTrailMeshJobA.Schedule(this.mUpdateJobHandle);
-
-            }
-
+            this.mUpdateJobHandle = updatePointsLifecycle.Schedule(this.mUpdateJobHandle);
 
             this.mUpdateJobHandle.Complete();
             OutputJobResult();
 
+
+            NativeList<float> normalizedLengthList = new NativeList<float>(Allocator.TempJob);
+            NativeList<float> normalizedLifeList = new NativeList<float>(Allocator.TempJob);
+
+            UpdateTrailMeshJob_PartA updateTrailMeshJobA = new UpdateTrailMeshJob_PartA
+            {
+                mPoints = this.mPointList,
+                mHeadArray = this.mHeadArray,
+                discontinuities = this.discontinuitiesNative,
+                normalizedLengthList = normalizedLengthList,
+                normalizedLifeList = normalizedLifeList,
+            };
+
+            updateTrailMeshJobA.Schedule().Complete();
+            //this.mUpdateJobHandle = updateTrailMeshJobA.Schedule();
+
+            //this.mUpdateJobHandle.Complete();
+            //OutputJobResult();
+
+            NativeList<Color> lengthThickColor = new NativeList<Color>(Allocator.TempJob);
+            NativeList<Color> timeThickColor = new NativeList<Color>(Allocator.TempJob);
+            NativeList<float> lengthThickCurve = new NativeList<float>(Allocator.TempJob);
+            NativeList<float> timeThickCurve = new NativeList<float>(Allocator.TempJob);
 
             for (int i = 0; i < normalizedLifeList.Length; i++)
             {
@@ -1346,8 +1324,8 @@ namespace AraJob
             }
 
 
-            normalizedLengthList.Clear();
-            normalizedLifeList.Clear();
+            normalizedLengthList.Dispose();
+            normalizedLifeList.Dispose();
 
 
             UpdateTrailMeshJob_PartB updateTrailMeshJobB = new UpdateTrailMeshJob_PartB
@@ -1373,10 +1351,10 @@ namespace AraJob
 
 
 
-            lengthThickColor.Clear();
-            lengthThickCurve.Clear();
-            timeThickColor.Clear();
-            timeThickCurve.Clear();
+            lengthThickColor.Dispose();
+            lengthThickCurve.Dispose();
+            timeThickColor.Dispose();
+            timeThickCurve.Dispose();
 
 
 
