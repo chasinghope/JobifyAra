@@ -7,33 +7,15 @@ using UnityEngine;
 
 public class MyTestJob : MonoBehaviour
 {
-    public Gradient gradient;
-    public AnimationCurve curve;
-    NativeArray<float> nArray;
-    NativeArray<GradientColorKey> GradientColorKeyArray;
-    NativeArray<GradientAlphaKey> GradientAlphaKeyArray;
 
-    NativeArray<Keyframe> keyframeArray;
+    NativeArray<float> nArray;
+
     
     // Start is called before the first frame update
     void Start()
     {
         nArray = new NativeArray<float>(1, Allocator.Persistent);
-        GradientColorKeyArray = new NativeArray<GradientColorKey>(this.gradient.colorKeys.Length, Allocator.Persistent);
-        for (int i = 0; i < this.gradient.colorKeys.Length; i++)
-        {
-            this.GradientColorKeyArray[i] = this.gradient.colorKeys[i];
-        }
-        GradientAlphaKeyArray = new NativeArray<GradientAlphaKey>(this.gradient.alphaKeys.Length, Allocator.Persistent);
-        for (int i = 0; i < this.gradient.alphaKeys.Length; i++)
-        {
-            this.GradientAlphaKeyArray[i] = this.gradient.alphaKeys[i];
-        }
-        keyframeArray = new NativeArray<Keyframe>(this.curve.keys.Length, Allocator.Persistent);
-        for (int i = 0; i < this.curve.keys.Length; i++)
-        {
-            keyframeArray[i] = this.curve.keys[i];
-        }
+
     }
 
     // Update is called once per frame
@@ -41,14 +23,12 @@ public class MyTestJob : MonoBehaviour
     {
         MJob mJob = new MJob
         {
-            GradientColorKeyArray = this.GradientColorKeyArray,
-            GradientAlphaKeyArray = this.GradientAlphaKeyArray,
-            gradientMode = this.gradient.mode,
-            keyframeArray = this.keyframeArray,
+            nArray = this.nArray
         };
         JobHandle jobHandle = mJob.Schedule();
         jobHandle.Complete();
- 
+
+        Debug.Log($"nArray[0]: {nArray[0]}");
 
     }
 
@@ -56,29 +36,17 @@ public class MyTestJob : MonoBehaviour
     {
         if (nArray.IsCreated)
             nArray.Dispose();
-        if (GradientColorKeyArray.IsCreated)
-            GradientColorKeyArray.Dispose();
-        if (GradientAlphaKeyArray.IsCreated)
-            GradientAlphaKeyArray.Dispose();
-        if (keyframeArray.IsCreated)
-            keyframeArray.Dispose();
     }
 
     [BurstCompile]
     public struct MJob : IJob
     {
         //public NativeArray<float> nArray;
-        public NativeArray<GradientColorKey> GradientColorKeyArray;
-        public NativeArray<GradientAlphaKey> GradientAlphaKeyArray;
-        public GradientMode gradientMode;
-        public NativeArray<Keyframe> keyframeArray;
+        public NativeArray<float> nArray;
 
         public void Execute()
         {
-            Color color = UnityJobifyHelper.Gradient_Evaluate(GradientColorKeyArray, GradientAlphaKeyArray, gradientMode, 0.5f);
-            float fValue = UnityJobifyHelper.AnimationCurve_Evaluate(keyframeArray, 0.5f);
-            Debug.Log($"color: {color}");
-            Debug.Log($"fValue: {fValue}");
+            nArray[0] = nArray[0] + 10;
         }
 
        
