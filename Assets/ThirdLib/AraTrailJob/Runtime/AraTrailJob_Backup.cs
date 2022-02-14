@@ -1186,33 +1186,33 @@ namespace AraJob
             };
 
 
-            updateTrailMeshJobA = new UpdateTrailMeshJob_PartA
-            {
-                mPoints = this.mPointList,
-                mHeadArray = this.mHeadArray,
-                discontinuities = this.discontinuitiesNative,
-                normalizedLengthList = normalizedLengthList,
-                normalizedLifeList = normalizedLifeList,
-            };
+            //updateTrailMeshJobA = new UpdateTrailMeshJob_PartA
+            //{
+            //    mPoints = this.mPointList,
+            //    mHeadArray = this.mHeadArray,
+            //    discontinuities = this.discontinuitiesNative,
+            //    normalizedLengthList = normalizedLengthList,
+            //    normalizedLifeList = normalizedLifeList,
+            //};
 
-            updateTrailMeshJobB = new UpdateTrailMeshJob_PartB
-            {
-                mPoints = this.mPointList,
-                mHeadArray = this.mHeadArray,
-                discontinuities = this.discontinuitiesNative,
+            //updateTrailMeshJobB = new UpdateTrailMeshJob_PartB
+            //{
+            //    mPoints = this.mPointList,
+            //    mHeadArray = this.mHeadArray,
+            //    discontinuities = this.discontinuitiesNative,
 
-                vertices = this.verticesNative,
-                tangents = this.tangentsNative,
-                vertColors = this.vertColorsNative,
-                uvs = this.uvsNative,
-                tris = this.trisNative,
-                normals = this.normalsNative,
+            //    vertices = this.verticesNative,
+            //    tangents = this.tangentsNative,
+            //    vertColors = this.vertColorsNative,
+            //    uvs = this.uvsNative,
+            //    tris = this.trisNative,
+            //    normals = this.normalsNative,
 
-                lengthThickColor = lengthThickColor,
-                timeThickColor = timeThickColor,
-                lengthThickCurve = lengthThickCurve,
-                timeThickCurve = timeThickCurve
-            };
+            //    lengthThickColor = lengthThickColor,
+            //    timeThickColor = timeThickColor,
+            //    lengthThickCurve = lengthThickCurve,
+            //    timeThickCurve = timeThickCurve
+            //};
 
         }
 
@@ -1296,8 +1296,8 @@ namespace AraJob
 
         private void LateUpdateJobify()
         {
-            if (!this.mUpdateJobHandle.IsCompleted)
-                return;
+            //if (!this.mUpdateJobHandle.IsCompleted)
+            //    return;
 
             FillJobifyVariables();
 
@@ -1337,14 +1337,14 @@ namespace AraJob
                 //OutputJobResult();
             }
 
-            //UpdateTrailMeshJob_PartA updateTrailMeshJobA = new UpdateTrailMeshJob_PartA
-            //{
-            //    mPoints = this.mPointList,
-            //    mHeadArray = this.mHeadArray,
-            //    discontinuities = this.discontinuitiesNative,
-            //    normalizedLengthList = normalizedLengthList,
-            //    normalizedLifeList = normalizedLifeList,
-            //};
+            updateTrailMeshJobA = new UpdateTrailMeshJob_PartA
+            {
+                mPoints = this.mPointList,
+                mHeadArray = this.mHeadArray,
+                discontinuities = this.discontinuitiesNative,
+                normalizedLengthList = normalizedLengthList,
+                normalizedLifeList = normalizedLifeList,
+            };
 
             //updateTrailMeshJobA.Schedule().Complete();
             this.mUpdateJobHandle = this.updateTrailMeshJobA.Schedule(this.mUpdateJobHandle);
@@ -1375,24 +1375,24 @@ namespace AraJob
             normalizedLifeList.Clear();
 
 
-            //UpdateTrailMeshJob_PartB updateTrailMeshJobB = new UpdateTrailMeshJob_PartB
-            //{
-            //    mPoints = this.mPointList,
-            //    mHeadArray = this.mHeadArray,
-            //    discontinuities = this.discontinuitiesNative,
+            updateTrailMeshJobB = new UpdateTrailMeshJob_PartB
+            {
+                mPoints = this.mPointList,
+                mHeadArray = this.mHeadArray,
+                discontinuities = this.discontinuitiesNative,
 
-            //    vertices = this.verticesNative,
-            //    tangents = this.tangentsNative,
-            //    vertColors = this.vertColorsNative,
-            //    uvs = this.uvsNative,
-            //    tris = this.trisNative,
-            //    normals = this.normalsNative,
+                vertices = this.verticesNative,
+                tangents = this.tangentsNative,
+                vertColors = this.vertColorsNative,
+                uvs = this.uvsNative,
+                tris = this.trisNative,
+                normals = this.normalsNative,
 
-            //    lengthThickColor = lengthThickColor,
-            //    timeThickColor = timeThickColor,
-            //    lengthThickCurve = lengthThickCurve,
-            //    timeThickCurve = timeThickCurve
-            //};
+                lengthThickColor = lengthThickColor,
+                timeThickColor = timeThickColor,
+                lengthThickCurve = lengthThickCurve,
+                timeThickCurve = timeThickCurve
+            };
 
             this.updateTrailMeshJobB.Schedule().Complete();
             //this.mUpdateJobHandle = updateTrailMeshJobB.Schedule(this.mUpdateJobHandle);
@@ -1449,7 +1449,6 @@ namespace AraJob
             //mesh_.SetTriangles(tris, 0, true);
 
             mesh_.SetVertices(verticesNative.ToArray());
-            //mesh_.RecalculateBounds();
             mesh_.SetNormals(normalsNative.ToArray());
             mesh_.SetTangents(tangentsNative.ToArray());
             mesh_.SetColors(vertColorsNative.ToArray());
