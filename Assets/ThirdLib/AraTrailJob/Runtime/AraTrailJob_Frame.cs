@@ -11,7 +11,7 @@ using UnityEngine.Jobs;
 namespace AraJob
 {
 
-    [ExecuteInEditMode]
+    //[ExecuteInEditMode]
     public class AraTrailJob_Frame : MonoBehaviour
     {
 
@@ -339,12 +339,13 @@ namespace AraJob
         }
 
 
-
+        private Camera mainCamera;
 
         #region Unity Mono
 
         public void Awake()
         {
+            this.mainCamera = Camera.main;
             Warmup();
             this.InitJobifyVariables();
         }
@@ -364,8 +365,8 @@ namespace AraJob
 
         private void FixedUpdate()
         {
-            if (!this.mLateUpdateJobHandle.IsCompleted)
-                return;
+            //if (!this.mLateUpdateJobHandle.IsCompleted)
+            //    return;
             if (!enablePhysics)
                 return;
 
@@ -438,7 +439,7 @@ namespace AraJob
             {
                 if (curCamera != null)
                     LateUpdateJobify();
-                else if (Camera.main != null)
+                else if (this.mainCamera != null)
                     LateUpdateJobify();
             }
             else
@@ -461,7 +462,7 @@ namespace AraJob
         void OnDisable()
         {
             points.Clear();
-            this.mPointList.Clear();
+            //this.mPointList.Clear();
             // destroy both the trail mesh and the hidden renderer object:
             DestroyImmediate(mesh_);
             DestoryTrailGoc();
@@ -494,6 +495,9 @@ namespace AraJob
         public void Clear()
         {
             points.Clear();
+            //this.mUpdateJobHandle.Complete();
+            //this.mLateUpdateJobHandle.Complete();
+            //this.mPointList.Clear();
         }
 
         private void UpdateVelocity()
@@ -1121,19 +1125,19 @@ namespace AraJob
             FillJobifyVariables();
         }
 
-
+        Camera tempCamera = null;
         private void FillJobifyVariables()
         {
 
-            Camera tempCamera = null;
+
 
 #if UNITY_EDITOR
             if (!baseOnSceneViewCamera)
             {
                 if (curCamera != null)
                     tempCamera = curCamera;
-                else if (Camera.main != null)
-                    tempCamera = Camera.main;
+                else if (this.mainCamera)
+                    tempCamera = this.mainCamera;
             }
             else
             {
@@ -1232,6 +1236,7 @@ namespace AraJob
         {
             this.mFixUpdateJobHandle.Complete();
             this.mUpdateJobHandle.Complete();
+            this.mLateUpdateJobHandle.Complete();
 
             if (this.mHeadArray.IsCreated)
                 this.mHeadArray.Dispose();
@@ -1255,12 +1260,18 @@ namespace AraJob
             if (this.normalsNative.IsCreated)
                 this.normalsNative.Dispose();
 
-            normalizedLengthList.Dispose();
-            normalizedLifeList.Dispose();
-            lengthThickColor.Dispose();
-            timeThickColor.Dispose();
-            lengthThickCurve.Dispose();
-            timeThickCurve.Dispose();
+            if (this.normalizedLengthList.IsCreated)
+                this.normalizedLengthList.Dispose();
+            if (this.normalizedLifeList.IsCreated)
+                this.normalizedLifeList.Dispose();
+            if (this.lengthThickColor.IsCreated)
+                this.lengthThickColor.Dispose();
+            if (this.timeThickColor.IsCreated)
+                this.timeThickColor.Dispose();
+            if (this.lengthThickCurve.IsCreated)
+                this.lengthThickCurve.Dispose();
+            if (this.timeThickCurve.IsCreated)
+                this.timeThickCurve.Dispose();
 
             //if (this.mLengthThickCurve.IsCreated)
             //{
@@ -1349,12 +1360,11 @@ namespace AraJob
             //updateTrailMeshJobA.Schedule().Complete();
             this.mUpdateJobHandle = this.updateTrailMeshJobA.Schedule(this.mUpdateJobHandle);
             this.mUpdateJobHandle.Complete();
+            //this.updateTrailMeshJobA.Run();
             OutputJobResult();
 
 
-
-
-            for (int i = 0; i < normalizedLifeList.Length; i++)
+            for (int i = normalizedLifeList.Length - 1; i >= 0; i--)
             {
                 Color timeColor = this.colorOverTime.Evaluate(normalizedLifeList[i]);
                 timeThickColor.Add(timeColor);
@@ -1362,7 +1372,7 @@ namespace AraJob
                 timeThickCurve.Add(timeCurveValue);
             }
 
-            for (int i = 0; i < normalizedLengthList.Length; i++)
+            for (int i = normalizedLengthList.Length - 1; i >= 0; i--)
             {
                 Color lengthColor = this.colorOverLenght.Evaluate(normalizedLengthList[i]);
                 lengthThickColor.Add(lengthColor);
@@ -1395,6 +1405,7 @@ namespace AraJob
             };
 
             this.updateTrailMeshJobB.Schedule().Complete();
+            //this.updateTrailMeshJobB.Run();
             //this.mUpdateJobHandle = updateTrailMeshJobB.Schedule(this.mUpdateJobHandle);
 
 
@@ -1447,7 +1458,7 @@ namespace AraJob
             //mesh_.SetColors(vertColors);
             //mesh_.SetUVs(0, uvs);
             //mesh_.SetTriangles(tris, 0, true);
-
+            //Debug.Log($"<color=green>{mPointList.Length}</color>");
             mesh_.SetVertices(verticesNative.ToArray());
             mesh_.SetNormals(normalsNative.ToArray());
             mesh_.SetTangents(tangentsNative.ToArray());
@@ -1455,8 +1466,8 @@ namespace AraJob
             mesh_.SetUVs(0, uvsNative.ToArray());
             mesh_.SetTriangles(trisNative.ToArray(), 0, true);
 
-            RenderMesh(curCamera);
-            
+            RenderMesh(this.tempCamera);
+
 
         }
 
@@ -2065,7 +2076,7 @@ namespace AraJob
                     rHead.speed = rHead.velocity.magnitude;
                 }
                 rHead.prevPosition = rHead.position;
- 
+
 
                 // Acumulate the amount of time passed:
                 rHead.accumTime += rHead.DeltaTime;

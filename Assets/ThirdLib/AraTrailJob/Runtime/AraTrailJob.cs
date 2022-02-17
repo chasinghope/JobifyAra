@@ -11,7 +11,7 @@ using UnityEngine.Jobs;
 namespace AraJob
 {
 
-    [ExecuteInEditMode]
+    //[ExecuteInEditMode]
     public class AraTrailJob : MonoBehaviour
     {
 
@@ -497,6 +497,10 @@ namespace AraJob
         public void Clear()
         {
             points.Clear();
+
+            //this.mUpdateJobHandle.Complete();
+            //this.mLateUpdateJobHandle.Complete();
+            //this.mPointList.Clear();
         }
 
         private void UpdateVelocity()
@@ -1124,11 +1128,12 @@ namespace AraJob
             FillJobifyVariables();
         }
 
+        Camera tempCamera = null;
 
         private void FillJobifyVariables()
         {
 
-            Camera tempCamera = null;
+
 
 #if UNITY_EDITOR
             if (!baseOnSceneViewCamera)
@@ -1259,12 +1264,18 @@ namespace AraJob
             if (this.normalsNative.IsCreated)
                 this.normalsNative.Dispose();
 
-            normalizedLengthList.Dispose();
-            normalizedLifeList.Dispose();
-            lengthThickColor.Dispose();
-            timeThickColor.Dispose();
-            lengthThickCurve.Dispose();
-            timeThickCurve.Dispose();
+            if (this.normalizedLengthList.IsCreated)
+                this.normalizedLengthList.Dispose();
+            if (this.normalizedLifeList.IsCreated)
+                this.normalizedLifeList.Dispose();
+            if (this.lengthThickColor.IsCreated)
+                this.lengthThickColor.Dispose();
+            if (this.timeThickColor.IsCreated)
+                this.timeThickColor.Dispose();
+            if (this.lengthThickCurve.IsCreated)
+                this.lengthThickCurve.Dispose();
+            if (this.timeThickCurve.IsCreated)
+                this.timeThickCurve.Dispose();
 
             //if (this.mLengthThickCurve.IsCreated)
             //{
@@ -1305,113 +1316,220 @@ namespace AraJob
             step2
         }
         private Step step = Step.step0;
+        private bool frameRendered;
 
         private void LateUpdateJobify()
         {
 
-            switch (step)
-            {
-                case Step.step0:
-                    FillJobifyVariables();
+            //switch (step)
+            //{
+            //    case Step.step0:
+            //        FillJobifyVariables();
 
-                    updateTrailMeshJobA = new UpdateTrailMeshJob_PartA
+            //        updateTrailMeshJobA = new UpdateTrailMeshJob_PartA
+            //        {
+            //            mPoints = this.mPointList,
+            //            mHeadArray = this.mHeadArray,
+            //            discontinuities = this.discontinuitiesNative,
+            //            normalizedLengthList = normalizedLengthList,
+            //            normalizedLifeList = normalizedLifeList,
+            //        };
+
+            //        this.mUpdateJobHandle = this.updateTrailMeshJobA.Schedule(this.mUpdateJobHandle);
+            //        this.step = Step.step1;
+
+            //        RenderMesh(tempCamera);
+            //        break;
+            //    case Step.step1:
+
+            //        if (this.mUpdateJobHandle.IsCompleted)
+            //        {
+            //            this.mUpdateJobHandle.Complete();
+
+            //            OutputJobResult();
+
+            //            for (int i = normalizedLifeList.Length - 1; i >= 0; i--)
+            //            {
+            //                Color timeColor = this.colorOverTime.Evaluate(normalizedLifeList[i]);
+            //                timeThickColor.Add(timeColor);
+            //                float timeCurveValue = this.thicknessOverTime.Evaluate(normalizedLifeList[i]);
+            //                timeThickCurve.Add(timeCurveValue);
+            //            }
+
+            //            for (int i = normalizedLengthList.Length - 1; i >= 0; i--)
+            //            {
+            //                Color lengthColor = this.colorOverLenght.Evaluate(normalizedLengthList[i]);
+            //                lengthThickColor.Add(lengthColor);
+            //                float lengthCurveValue = this.thicknessOverLenght.Evaluate(normalizedLengthList[i]);
+            //                lengthThickCurve.Add(lengthCurveValue);
+            //            }
+
+            //            normalizedLengthList.Clear();
+            //            normalizedLifeList.Clear();
+
+            //            updateTrailMeshJobB = new UpdateTrailMeshJob_PartB
+            //            {
+            //                mPoints = this.mPointList,
+            //                mHeadArray = this.mHeadArray,
+            //                discontinuities = this.discontinuitiesNative,
+
+            //                vertices = this.verticesNative,
+            //                tangents = this.tangentsNative,
+            //                vertColors = this.vertColorsNative,
+            //                uvs = this.uvsNative,
+            //                tris = this.trisNative,
+            //                normals = this.normalsNative,
+
+            //                lengthThickColor = lengthThickColor,
+            //                timeThickColor = timeThickColor,
+            //                lengthThickCurve = lengthThickCurve,
+            //                timeThickCurve = timeThickCurve
+            //            };
+
+
+            //            this.mLateUpdateJobHandle = this.updateTrailMeshJobB.Schedule();
+            //            this.step = Step.step2;
+            //        }
+
+            //        RenderMesh(tempCamera);
+            //        break;
+            //    case Step.step2:
+            //        if (this.mLateUpdateJobHandle.IsCompleted)
+            //        {
+            //            this.mLateUpdateJobHandle.Complete();
+
+            //            lengthThickColor.Clear();
+            //            lengthThickCurve.Clear();
+            //            timeThickColor.Clear();
+            //            timeThickCurve.Clear();
+
+            //            this.mesh_.Clear();
+
+            //            mesh_.SetVertices(verticesNative.ToArray());
+            //            mesh_.SetNormals(normalsNative.ToArray());
+            //            mesh_.SetTangents(tangentsNative.ToArray());
+            //            mesh_.SetColors(vertColorsNative.ToArray());
+            //            mesh_.SetUVs(0, uvsNative.ToArray());
+            //            mesh_.SetTriangles(trisNative.ToArray(), 0, true);
+
+            //            RenderMesh(tempCamera);
+            //            this.step = Step.step0;
+            //        }
+            //        else 
+            //        {
+            //            RenderMesh(tempCamera);
+            //        }
+
+            //        break;
+            //    default:
+            //        break;
+            //}
+
+            this.frameRendered = false;
+
+            if (this.step == Step.step0)
+            {
+                FillJobifyVariables();
+
+                updateTrailMeshJobA = new UpdateTrailMeshJob_PartA
+                {
+                    mPoints = this.mPointList,
+                    mHeadArray = this.mHeadArray,
+                    discontinuities = this.discontinuitiesNative,
+                    normalizedLengthList = normalizedLengthList,
+                    normalizedLifeList = normalizedLifeList,
+                };
+
+                this.mUpdateJobHandle = this.updateTrailMeshJobA.Schedule(this.mUpdateJobHandle);
+                this.step = Step.step1;
+            }
+
+
+            if (this.step == Step.step1)
+            {
+                if (this.mUpdateJobHandle.IsCompleted)
+                {
+                    this.mUpdateJobHandle.Complete();
+
+                    OutputJobResult();
+
+                    for (int i = normalizedLifeList.Length - 1; i >= 0; i--)
+                    {
+                        Color timeColor = this.colorOverTime.Evaluate(normalizedLifeList[i]);
+                        timeThickColor.Add(timeColor);
+                        float timeCurveValue = this.thicknessOverTime.Evaluate(normalizedLifeList[i]);
+                        timeThickCurve.Add(timeCurveValue);
+                    }
+
+                    for (int i = normalizedLengthList.Length - 1; i >= 0; i--)
+                    {
+                        Color lengthColor = this.colorOverLenght.Evaluate(normalizedLengthList[i]);
+                        lengthThickColor.Add(lengthColor);
+                        float lengthCurveValue = this.thicknessOverLenght.Evaluate(normalizedLengthList[i]);
+                        lengthThickCurve.Add(lengthCurveValue);
+                    }
+
+                    normalizedLengthList.Clear();
+                    normalizedLifeList.Clear();
+
+                    updateTrailMeshJobB = new UpdateTrailMeshJob_PartB
                     {
                         mPoints = this.mPointList,
                         mHeadArray = this.mHeadArray,
                         discontinuities = this.discontinuitiesNative,
-                        normalizedLengthList = normalizedLengthList,
-                        normalizedLifeList = normalizedLifeList,
+
+                        vertices = this.verticesNative,
+                        tangents = this.tangentsNative,
+                        vertColors = this.vertColorsNative,
+                        uvs = this.uvsNative,
+                        tris = this.trisNative,
+                        normals = this.normalsNative,
+
+                        lengthThickColor = lengthThickColor,
+                        timeThickColor = timeThickColor,
+                        lengthThickCurve = lengthThickCurve,
+                        timeThickCurve = timeThickCurve
                     };
 
-                    this.mUpdateJobHandle = this.updateTrailMeshJobA.Schedule(this.mUpdateJobHandle);
-                    this.step = Step.step1;
 
-                    RenderMesh(curCamera);
-                    break;
-                case Step.step1:
-
-                    if (this.mUpdateJobHandle.IsCompleted)
-                    {
-                        this.mUpdateJobHandle.Complete();
-
-                        OutputJobResult();
-
-                        for (int i = 0; i < normalizedLifeList.Length; i++)
-                        {
-                            Color timeColor = this.colorOverTime.Evaluate(normalizedLifeList[i]);
-                            timeThickColor.Add(timeColor);
-                            float timeCurveValue = this.thicknessOverTime.Evaluate(normalizedLifeList[i]);
-                            timeThickCurve.Add(timeCurveValue);
-                        }
-
-                        for (int i = 0; i < normalizedLengthList.Length; i++)
-                        {
-                            Color lengthColor = this.colorOverLenght.Evaluate(normalizedLengthList[i]);
-                            lengthThickColor.Add(lengthColor);
-                            float lengthCurveValue = this.thicknessOverLenght.Evaluate(normalizedLengthList[i]);
-                            lengthThickCurve.Add(lengthCurveValue);
-                        }
-
-                        normalizedLengthList.Clear();
-                        normalizedLifeList.Clear();
-
-                        updateTrailMeshJobB = new UpdateTrailMeshJob_PartB
-                        {
-                            mPoints = this.mPointList,
-                            mHeadArray = this.mHeadArray,
-                            discontinuities = this.discontinuitiesNative,
-
-                            vertices = this.verticesNative,
-                            tangents = this.tangentsNative,
-                            vertColors = this.vertColorsNative,
-                            uvs = this.uvsNative,
-                            tris = this.trisNative,
-                            normals = this.normalsNative,
-
-                            lengthThickColor = lengthThickColor,
-                            timeThickColor = timeThickColor,
-                            lengthThickCurve = lengthThickCurve,
-                            timeThickCurve = timeThickCurve
-                        };
-
-
-                        this.mLateUpdateJobHandle = this.updateTrailMeshJobB.Schedule();
-                        this.step = Step.step2;
-                    }
-
-                    RenderMesh(curCamera);
-                    break;
-                case Step.step2:
-                    if (this.mLateUpdateJobHandle.IsCompleted)
-                    {
-                        this.mLateUpdateJobHandle.Complete();
-
-                        lengthThickColor.Clear();
-                        lengthThickCurve.Clear();
-                        timeThickColor.Clear();
-                        timeThickCurve.Clear();
-
-                        this.mesh_.Clear();
-
-                        mesh_.SetVertices(verticesNative.ToArray());
-                        mesh_.SetNormals(normalsNative.ToArray());
-                        mesh_.SetTangents(tangentsNative.ToArray());
-                        mesh_.SetColors(vertColorsNative.ToArray());
-                        mesh_.SetUVs(0, uvsNative.ToArray());
-                        mesh_.SetTriangles(trisNative.ToArray(), 0, true);
-
-                        RenderMesh(curCamera);
-                        this.step = Step.step0;
-                    }
-                    else 
-                    {
-                        RenderMesh(curCamera);
-                    }
-                   
-                    break;
-                default:
-                    break;
+                    this.mLateUpdateJobHandle = this.updateTrailMeshJobB.Schedule();
+                    this.step = Step.step2;
+                }
             }
+
+
+            if (this.step == Step.step2)
+            {
+                if (this.mLateUpdateJobHandle.IsCompleted)
+                {
+                    this.mLateUpdateJobHandle.Complete();
+
+                    lengthThickColor.Clear();
+                    lengthThickCurve.Clear();
+                    timeThickColor.Clear();
+                    timeThickCurve.Clear();
+
+                    this.mesh_.Clear();
+
+                    mesh_.SetVertices(verticesNative.ToArray());
+                    mesh_.SetNormals(normalsNative.ToArray());
+                    mesh_.SetTangents(tangentsNative.ToArray());
+                    mesh_.SetColors(vertColorsNative.ToArray());
+                    mesh_.SetUVs(0, uvsNative.ToArray());
+                    mesh_.SetTriangles(trisNative.ToArray(), 0, true);
+
+                    RenderMesh(tempCamera);
+                    this.step = Step.step0;
+                    this.frameRendered = true;
+                }
+            }
+
+            if (!this.frameRendered)
+                RenderMesh(tempCamera);
+
+
+
+            JobHandle.ScheduleBatchedJobs();
 
         }
 
