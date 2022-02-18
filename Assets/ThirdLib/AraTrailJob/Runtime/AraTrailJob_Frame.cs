@@ -310,10 +310,10 @@ namespace AraJob
         private List<int> discontinuities = new List<int>();
 
         private Mesh mesh_;
-        private Vector3 velocity = Vector3.zero;
-        private Vector3 prevPosition;
-        private float speed = 0;
-        private float accumTime = 0;
+        public Vector3 velocity = Vector3.zero;
+        public Vector3 prevPosition;
+        public float speed = 0;
+        public float accumTime = 0;
 
         private List<Vector3> vertices = new List<Vector3>();
         private List<Vector3> normals = new List<Vector3>();
@@ -322,12 +322,12 @@ namespace AraJob
         private List<Color> vertColors = new List<Color>();
         private List<int> tris = new List<int>();
 
-        private float DeltaTime
+        public float DeltaTime
         {
             get { return timescale == Timescale.Unscaled ? Time.unscaledDeltaTime : Time.deltaTime; }
         }
 
-        private float FixedDeltaTime
+        public float FixedDeltaTime
         {
             get { return timescale == Timescale.Unscaled ? Time.fixedUnscaledDeltaTime : Time.fixedDeltaTime; }
         }
@@ -1135,7 +1135,7 @@ namespace AraJob
             FillJobifyVariables();
         }
 
-        Camera tempCamera = null;
+        public Camera tempCamera = null;
         private void FillJobifyVariables()
         {
 
@@ -1480,6 +1480,35 @@ namespace AraJob
             public TrailAlignment alignment;
             public int cornerRoundness;
             public float thickness;
+
+            public int len_point;
+            public int len_lengthCurve;
+            public int len_lengthGradientColor;
+            public int len_lengthGradientAlpha;
+            public int len_timeCurve;
+            public int len_timeGradientColor;
+            public int len_timeGradientAlpha;
+            public int len_vertices;
+            public int len_tangents;
+            public int len_vertColors;
+            public int len_uvs;
+            public int len_tris;
+            public int len_normals;
+
+            public int index_point;
+            public int index_lengthCurve;
+            public int index_lengthGradientColor;
+            public int index_lengthGradientAlpha;
+            public int index_timeCurve;
+            public int index_timeGradientColor;
+            public int index_timeGradientAlpha;
+            public int index_vertices;
+            public int index_tangents;
+            public int index_vertColors;
+            public int index_uvs;
+            public int index_tris;
+            public int index_normals;
+
 
         }
 
