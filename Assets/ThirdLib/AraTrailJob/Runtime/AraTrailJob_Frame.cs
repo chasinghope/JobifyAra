@@ -1070,7 +1070,7 @@ namespace AraJob
         private NativeList<Point> mPointList;
         private TransformAccessArray mTransfromArray;    // Length = 1   this.transform
 
-        public NativeList<int> discontinuitiesNative;
+        //public NativeList<int> discontinuitiesNative;
         public NativeList<Vector3> verticesNative;
         public NativeList<Vector4> tangentsNative;
         public NativeList<Color> vertColorsNative;
@@ -1100,7 +1100,7 @@ namespace AraJob
             this.mPointList = new NativeList<Point>(Allocator.Persistent);
             this.mTransfromArray = new TransformAccessArray();
 
-            this.discontinuitiesNative = new NativeList<int>(Allocator.Persistent);
+            //this.discontinuitiesNative = new NativeList<int>(Allocator.Persistent);
             this.verticesNative = new NativeList<Vector3>(Allocator.Persistent);
             this.tangentsNative = new NativeList<Vector4>(Allocator.Persistent);
             this.vertColorsNative = new NativeList<Color>(Allocator.Persistent);
@@ -1255,8 +1255,8 @@ namespace AraJob
             if (this.mTransfromArray.isCreated)
                 this.mTransfromArray.Dispose();
 
-            if (this.discontinuitiesNative.IsCreated)
-                this.discontinuitiesNative.Dispose();
+            //if (this.discontinuitiesNative.IsCreated)
+            //    this.discontinuitiesNative.Dispose();
             if (this.verticesNative.IsCreated)
                 this.verticesNative.Dispose();
             if (this.tangentsNative.IsCreated)
@@ -1398,7 +1398,6 @@ namespace AraJob
             {
                 mPoints = this.mPointList,
                 mHeadArray = this.mHeadArray,
-                discontinuities = this.discontinuitiesNative,
 
                 mLengthThickCurve = this.mLengthThickCurve,
                 mLengthThickAlphaKeys = this.mLengthThickAlphaKeys,
@@ -2552,7 +2551,7 @@ namespace AraJob
         {
             public NativeList<Point> mPoints;
             public NativeArray<Head> mHeadArray;
-            public NativeList<int> discontinuities;
+            //public NativeList<int> discontinuities;
 
             public NativeList<Keyframe> mLengthThickCurve;
             public NativeList<GradientColorKey> mLengthThickColorKeys;
@@ -2663,7 +2662,9 @@ namespace AraJob
 
                     // get discontinuous point indices:
 
-                    discontinuities.Clear();
+                    //discontinuities.Clear();
+                    //public NativeList<int> discontinuities = new NativeList<int>(Allocator.Temp);
+                    NativeList<int> discontinuities = new NativeList<int>(Allocator.Temp);
                     for (int i = 0; i < mPoints.Length; ++i)
                         if (mPoints[i].discontinuous || i == mPoints.Length - 1) discontinuities.Add(i);
 
