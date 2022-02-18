@@ -201,20 +201,25 @@ namespace AraJob
                         return prePoint.value;
                     }
 
-                    if (prePoint.outWeight == 0)
-                        prePoint.outWeight = 1.0f / 3.0f;
-                    if (nextPoint.inWeight == 0)
-                        nextPoint.inWeight = 1.0f / 3.0f;
 
-                    //return HermiteInterpolate(prePoint, nextPoint, fTime);
+                    //return (float)AnimationCurveInterpolant(prePoint.time, prePoint.value, prePoint.outTangent, prePoint.outWeight, 
+                    //                                 nextPoint.time, nextPoint.value, nextPoint.inTangent, nextPoint.inWeight,
+                    //                                 fTime);
+
+                    //if (prePoint.outWeight == 0)
+                    //    prePoint.outWeight = 1.0f / 3.0f;
+                    //if (nextPoint.inWeight == 0)
+                    //    nextPoint.inWeight = 1.0f / 3.0f;
+
+                    return HermiteInterpolate(prePoint, nextPoint, fTime);
                     //fValue = HermiteInterpolate(prePoint, nextPoint, fTime);
                     //fValue = BezierInterpolate(prePoint, nextPoint, fTime);
-                    if (prePoint.outWeight == 1.0f / 3.0f && nextPoint.inWeight == 1.0f / 3.0f)
-                    {
-                        Debug.Log("?????????????");
-                        return HermiteInterpolate(prePoint, nextPoint, fTime);
-                    }
-                    return BezierInterpolate(prePoint, nextPoint, fTime);
+
+                    //if (prePoint.outWeight == 1.0f / 3.0f && nextPoint.inWeight == 1.0f / 3.0f)
+                    //{
+                    //    return HermiteInterpolate(prePoint, nextPoint, fTime);
+                    //}
+                    //return BezierInterpolate(prePoint, nextPoint, fTime);
                 }
             }
             return fValue;
@@ -380,6 +385,48 @@ namespace AraJob
             return omt3 * p0 + 3.0F * t * omt2 * p1 + 3.0F * t2 * omt * p2 + t3 * p3;
         }
 
+
+        //public const double Eps = 2.22e-16;
+
+        public static double AnimationCurveInterpolant(double x1, double y1, double yp1, double wt1, double x2, double y2, double yp2, double wt2, double x)
+        {
+            double dx = x2 - x1;
+            x = (x - x1) / dx;
+            double dy = y2 - y1;
+            yp1 = yp1 * dx / dy;
+            yp2 = yp2 * dx / dy;
+            double wt2s = 1 - wt2;
+
+            double t = 0.5;
+            double t2;
+
+            if (wt1 == 1 / 3.0 && wt2 == 1 / 3.0)
+            {
+                t = x;
+                t2 = 1 - t;
+            }
+            else
+            {
+                while (true)
+                {
+                    t2 = (1 - t);
+                    double fg = 3 * t2 * t2 * t * wt1 + 3 * t2 * t * t * wt2s + t * t * t - x;
+                    if (Math.Abs(fg) < 2 * 2.22e-16)
+                        break;
+
+                    // third order householder method
+                    double fpg = 3 * t2 * t2 * wt1 + 6 * t2 * t * (wt2s - wt1) + 3 * t * t * (1 - wt2s);
+                    double fppg = 6 * t2 * (wt2s - 2 * wt1) + 6 * t * (1 - 2 * wt2s + wt1);
+                    double fpppg = 18 * wt1 - 18 * wt2s + 6;
+
+                    t -= (6 * fg * fpg * fpg - 3 * fg * fg * fppg) / (6 * fpg * fpg * fpg - 6 * fg * fpg * fppg + fg * fg * fpppg);
+                }
+            }
+
+            double y = 3 * t2 * t2 * t * wt1 * yp1 + 3 * t2 * t * t * (1 - wt2 * yp2) + t * t * t;
+
+            return y * dy + y1;
+        }
         #endregion
 
 

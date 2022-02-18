@@ -498,7 +498,7 @@ public class DynamicBoneJobManager : MonoBehaviour
             ParticleList = this.mParticleList,
         };
         this.mLateUpdateJobHandle = rApplyParticlesToTransformsJob.Schedule(this.mParticleTransformList, this.mLateUpdateJobHandle);
-
+        
         JobHandle.ScheduleBatchedJobs();
     }
 

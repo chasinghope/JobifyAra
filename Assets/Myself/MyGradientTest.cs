@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine;
-
+using UnityEngine.UI;
 
 public class MyGradientTest : MonoBehaviour
 {
@@ -59,8 +59,9 @@ public class MyGradientTest : MonoBehaviour
     {
         foreach (var item in this.curve.keys)
         {
-            Debug.Log($" time: {item.time}\n value: {item.value}\n inTangent: {item.inTangent}\n outTangent: {item.outTangent}\n inweight: {item.inWeight}\n outweight: {item.outWeight}\n weightedMode: {item.weightedMode}\n tangentMode: {item.tangentMode}");
+            Debug.Log($"weightedMode: {item.weightedMode}\n time: {item.time}\n value: {item.value}\n inTangent: {item.inTangent}\n outTangent: {item.outTangent}\n inweight: {item.inWeight}\n outweight: {item.outWeight}\n weightedMode: {item.weightedMode}\n tangentMode: {item.tangentMode}");
         }
+
     }
 
 
@@ -75,9 +76,12 @@ public class MyGradientTest : MonoBehaviour
         Debug.Log($"<color=orange>0.1f  {this.curve.Evaluate(0.1f)}  </color><color=#33cccc>0.1f  {UnitySrcAssist.AnimationCurveEvaluate(this.keyframes, 0.1f)} </color>");
         Debug.Log($"<color=orange>0.2f  {this.curve.Evaluate(0.2f)}  </color><color=#33cccc>0.2f  {UnitySrcAssist.AnimationCurveEvaluate(this.keyframes, 0.2f)} </color>");
         Debug.Log($"<color=orange>0.3f  {this.curve.Evaluate(0.3f)}  </color><color=#33cccc>0.3f  {UnitySrcAssist.AnimationCurveEvaluate(this.keyframes, 0.3f)} </color>");
+        Debug.Log($"<color=orange>0.4f  {this.curve.Evaluate(0.4f)}  </color><color=#33cccc>0.4f  {UnitySrcAssist.AnimationCurveEvaluate(this.keyframes, 0.4f)} </color>");
         Debug.Log($"<color=orange>0.5f  {this.curve.Evaluate(0.5f)}  </color><color=#33cccc>0.5f  {UnitySrcAssist.AnimationCurveEvaluate(this.keyframes, 0.5f)} </color>");
+        Debug.Log($"<color=orange>0.6f  {this.curve.Evaluate(0.6f)}  </color><color=#33cccc>0.6f  {UnitySrcAssist.AnimationCurveEvaluate(this.keyframes, 0.6f)} </color>");
         Debug.Log($"<color=orange>0.7f  {this.curve.Evaluate(0.7f)}  </color><color=#33cccc>0.7f  {UnitySrcAssist.AnimationCurveEvaluate(this.keyframes, 0.7f)} </color>");
         Debug.Log($"<color=orange>0.8f  {this.curve.Evaluate(0.8f)}  </color><color=#33cccc>0.8f  {UnitySrcAssist.AnimationCurveEvaluate(this.keyframes, 0.8f)} </color>");
+        Debug.Log($"<color=orange>0.9f  {this.curve.Evaluate(0.9f)}  </color><color=#33cccc>0.9f  {UnitySrcAssist.AnimationCurveEvaluate(this.keyframes, 0.9f)} </color>");
         Debug.Log($"<color=orange>1.0f  {this.curve.Evaluate(1.0f)}  </color><color=#33cccc>1.0f  {UnitySrcAssist.AnimationCurveEvaluate(this.keyframes, 1.0f)} </color>");
         Debug.Log($"<color=orange>2.0f  {this.curve.Evaluate(2.0f)}  </color><color=#33cccc>2.0f  {UnitySrcAssist.AnimationCurveEvaluate(this.keyframes, 2.0f)} </color>");
 

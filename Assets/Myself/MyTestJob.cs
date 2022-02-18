@@ -75,10 +75,10 @@ public class MyTestJob : MonoBehaviour
 
         public void Execute()
         {
-            Color color = UnityJobifyHelper.Gradient_Evaluate(GradientColorKeyArray, GradientAlphaKeyArray, gradientMode, 0.5f);
-            float fValue = UnityJobifyHelper.AnimationCurve_Evaluate(keyframeArray, 0.5f);
-            Debug.Log($"color: {color}");
-            Debug.Log($"fValue: {fValue}");
+            //Color color = UnityJobifyHelper.Gradient_Evaluate(GradientColorKeyArray, GradientAlphaKeyArray, gradientMode, 0.5f);
+            //float fValue = UnityJobifyHelper.AnimationCurve_Evaluate(keyframeArray, 0.5f);
+            //Debug.Log($"color: {color}");
+            //Debug.Log($"fValue: {fValue}");
         }
 
        
