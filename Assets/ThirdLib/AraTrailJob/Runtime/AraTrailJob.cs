@@ -444,14 +444,31 @@ namespace AraJob
             mesh_.name = "ara_trail_mesh";
             mesh_.MarkDynamic();
 
+
+
+#if UNITY_EDITOR
+            if (!baseOnSceneViewCamera)
+            {
+                if (curCamera != null)
+                    tempCamera = curCamera;
+                else if (this.mainCamera)
+                    tempCamera = this.mainCamera;
+            }
+            else
+            {
+                if (SceneView.lastActiveSceneView != null && SceneView.lastActiveSceneView.camera != null)
+                    tempCamera = SceneView.lastActiveSceneView.camera;
+            }
+#else
+            if(curCamera != null)
+                tempCamera = curCamera;
+            else if(Camera.main != null)
+                tempCamera = Camera.main;
+#endif
+
             AraTrailJobManager.Instance.OnEnter(this);
         }
 
-
-        private void LateUpdate()
-        {
-
-        }
 
 
         void OnDisable()

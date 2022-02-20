@@ -116,7 +116,7 @@ namespace AraJob
                 Normals = this.normals
             };
 
-            this.mLateUpdateJobHandle = job.Schedule(this.mHeadList.Length, 32, this.mLateUpdateJobHandle);
+            this.mLateUpdateJobHandle = job.Schedule(this.mHeadList.Length, 1, this.mLateUpdateJobHandle);
             this.mLateUpdateJobHandle.Complete();
             this.DrawUpdateMeshData();
 
@@ -248,7 +248,7 @@ namespace AraJob
                 int nIndex = this.mAraJobList.IndexOf(rAraTrail);
                 if(rEChangeType == EChangeType.Add)
                 {
-                    if(nIndex == -1)
+                    if(nIndex != -1)
                     {
                         Debug.LogError($"AraTrial already existed. AraTrial:{rAraTrail.name}");
                         continue;
@@ -436,7 +436,7 @@ namespace AraJob
 
                 if(rEChangeType == EChangeType.Remove)
                 {
-                    if (nIndex == -1)
+                    if (nIndex != -1)
                     {
                         Debug.LogError($"AraTrail dose not existed. AraTrail:{rAraTrail.name}");
                         continue;
@@ -569,8 +569,9 @@ namespace AraJob
     [BurstCompile]
     public struct UpdateTrailMeshJob : IJobParallelFor
     {
-        public NativeList<Point> mPoints;
-        public NativeList<Head> mHeadArray;
+        public NativeArray<Head> mHeadArray;
+        public NativeArray<Point> mPoints;
+
         //public NativeList<int> discontinuities;
 
         [ReadOnly] public NativeList<Keyframe> mLengthThickCurve;
@@ -584,31 +585,25 @@ namespace AraJob
         [ReadOnly] public NativeList<GradientMode> mTimeModel;
 
 
-        public NativeList<Vector3> Vertices;
-        public NativeList<Vector4> Tangents;
-        public NativeList<Color> VertColors;
-        public NativeList<Vector3> Uvs;
-        public NativeList<int> Tris;
-        public NativeList<Vector3> Normals;
+        [WriteOnly] public NativeArray<Vector3> Vertices;
+        [WriteOnly] public NativeArray<Vector4> Tangents;
+        [WriteOnly] public NativeArray<Color> VertColors;
+        [WriteOnly] public NativeArray<Vector3> Uvs;
+        [WriteOnly] public NativeArray<int> Tris;
+        [WriteOnly] public NativeArray<Vector3> Normals;
 
 
-        NativeList<Vector3> vertices;
-        NativeList<Vector4> tangents;
-        NativeList<Color> vertColors;
-        NativeList<Vector3> uvs;
-        NativeList<int> tris;
-        NativeList<Vector3> normals;
+        //vertices;
+        //tangents;
+        //NativeList<Color> vertColors;
+        //NativeList<Vector3> uvs;
+        //NativeList<int> tris;
+        //NativeList<Vector3> normals;
 
 
 
         public void Execute(int index)
         {
-            vertices = new NativeList<Vector3>(Allocator.Temp);
-            tangents = new NativeList<Vector4>(Allocator.Temp);
-            vertColors = new NativeList<Color>(Allocator.Temp);
-            uvs = new NativeList<Vector3>(Allocator.Temp);
-            tris = new NativeList<int>(Allocator.Temp);
-            normals = new NativeList<Vector3>(Allocator.Temp);
 
             ClearMeshData(index);
 
@@ -716,52 +711,6 @@ namespace AraJob
 
 
 
-                rHead.len_vertices = vertices.Length;
-                rHead.len_tangents = tangents.Length;
-                rHead.len_vertColors = vertColors.Length;
-                rHead.len_uvs = uvs.Length;
-                rHead.len_tris = tris.Length;
-                rHead.len_normals = normals.Length;
-
-                for (int j = rHead.index_vertices, k = 0; j < (rHead.index_vertices + rHead.len_vertices); j++, k++)
-                {
-                    Vertices[j] = vertices[k];
-                }
-               
-                for (int j = rHead.index_tangents, k = 0; j < (rHead.index_tangents + rHead.len_tangents); j++, k++)
-                {
-                    Tangents[j] = tangents[k];
-                }
-
-                for (int j = rHead.len_vertColors, k = 0; j < (rHead.index_vertColors + rHead.len_vertColors); j++, k++)
-                {
-                    VertColors[j] = vertColors[k];
-                }
-
-                for (int j = rHead.index_uvs, k = 0; j < (rHead.index_uvs + rHead.len_uvs); j++, k++)
-                {
-                    Uvs[j] = uvs[k];
-                }
-
-                for (int j = rHead.index_tris, k = 0; j < (rHead.index_tris + rHead.len_tris); j++, k++)
-                {
-                    Tris[j] = tris[k];
-                }
-
-                for (int j = rHead.index_normals, k = 0; j < (rHead.index_normals + rHead.len_normals); j++, k++)
-                {
-                    Normals[j] = normals[k];
-                }
-
-
-                this.vertices.Dispose();
-                this.tangents.Dispose();
-                this.vertColors.Dispose();
-                this.uvs.Dispose();
-                this.tris.Dispose();
-                this.normals.Dispose();
-
-
 
                 mHeadArray[index] = rHead;
                 //CommitMeshData();
@@ -773,12 +722,20 @@ namespace AraJob
             }
         }
 
-        private void UpdateSegmentMesh(NativeList<Point> input, int start, int end, Vector3 localCamPosition, int nIndex)
+        private void UpdateSegmentMesh(NativeArray<Point> input, int start, int end, Vector3 localCamPosition, int nIndex)
         {
             Head rHead = mHeadArray[nIndex];
             // Get a list of the actual points to render: either the original, unsmoothed points or the smoothed curve.
-            NativeList<Point> trail = GetRenderablePoints(input, start, end, nIndex);
+            NativeArray<Point> trail = GetRenderablePoints(input, start, end, nIndex);
             //NativeList<Point> trail = input;
+
+            NativeList<Vector3> vertices = new NativeList<Vector3>(Allocator.Temp);
+            NativeList<Vector4> tangents = new NativeList<Vector4>(Allocator.Temp);
+            NativeList<Color> vertColors = new NativeList<Color>(Allocator.Temp);
+            NativeList<Vector3> uvs = new NativeList<Vector3>(Allocator.Temp);
+            NativeList<int> tris = new NativeList<int>(Allocator.Temp);
+            NativeList<Vector3> normals = new NativeList<Vector3>(Allocator.Temp);
+
 
             if (trail.Length > 1)
             {
@@ -1022,12 +979,58 @@ namespace AraJob
                 }
             }
 
+
+            rHead.len_vertices = vertices.Length;
+            rHead.len_tangents = tangents.Length;
+            rHead.len_vertColors = vertColors.Length;
+            rHead.len_uvs = uvs.Length;
+            rHead.len_tris = tris.Length;
+            rHead.len_normals = normals.Length;
+
+            for (int j = rHead.index_vertices, k = 0; j < (rHead.index_vertices + rHead.len_vertices); j++, k++)
+            {
+                Vertices[j] = vertices[k];
+            }
+
+            for (int j = rHead.index_tangents, k = 0; j < (rHead.index_tangents + rHead.len_tangents); j++, k++)
+            {
+                Tangents[j] = tangents[k];
+            }
+
+            for (int j = rHead.len_vertColors, k = 0; j < (rHead.index_vertColors + rHead.len_vertColors); j++, k++)
+            {
+                VertColors[j] = vertColors[k];
+            }
+
+            for (int j = rHead.index_uvs, k = 0; j < (rHead.index_uvs + rHead.len_uvs); j++, k++)
+            {
+                Uvs[j] = uvs[k];
+            }
+
+            for (int j = rHead.index_tris, k = 0; j < (rHead.index_tris + rHead.len_tris); j++, k++)
+            {
+                Tris[j] = tris[k];
+            }
+
+            for (int j = rHead.index_normals, k = 0; j < (rHead.index_normals + rHead.len_normals); j++, k++)
+            {
+                Normals[j] = normals[k];
+            }
+
+
+            vertices.Dispose();
+            tangents.Dispose();
+            vertColors.Dispose();
+            uvs.Dispose();
+            tris.Dispose();
+            normals.Dispose();
+
         }
 
-        private NativeList<Point> GetRenderablePoints(NativeList<Point> input, int start, int end, int index)
+        private NativeArray<Point> GetRenderablePoints(NativeArray<Point> input, int start, int end, int index)
         {
             Head rHead = mHeadArray[index];
-            NativeList<Point> points = mPoints;
+            NativeArray<Point> points = input;
             //renderablePoints.Clear();
 
             NativeList<Point> renderablePoints = new NativeList<Point>(Allocator.Temp);
@@ -1071,7 +1074,7 @@ namespace AraJob
             return renderablePoints;
         }
 
-        private float GetLenght(NativeList<Point> input)
+        private float GetLenght(NativeArray<Point> input)
         {
 
             float lenght = 0;
