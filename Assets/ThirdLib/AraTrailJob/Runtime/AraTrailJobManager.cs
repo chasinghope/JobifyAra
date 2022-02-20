@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.Jobs;
 using static Unity.Mathematics.math;
 using static AraJob.AraTrailJob;
+using UnityEngine.Rendering;
 
 namespace AraJob
 {
@@ -23,6 +24,22 @@ namespace AraJob
         public const int TRIANGLE_MUL = 3;
         public const int GRADIENT_COUNT = 8;
         public const int KEYFRAME_COUNT = 16;
+
+        public class GraphicNumber
+        {
+            public Mesh mesh;
+            public Material[] materials;
+            public Camera cam;
+            public Transform parent;
+            public Matrix4x4 matrix;
+            public int gameObjectLayer;
+            public ShadowCastingMode castShadows;
+            public bool receiveShadows;
+            public bool useLightProbes;
+            public float uvFlowX;
+            public float uvFlowY;
+        }
+
 
         private enum EChangeType
         {
@@ -40,13 +57,14 @@ namespace AraJob
             GameObject.DontDestroyOnLoad(rGo);
         }
 
-        private List<AraTrailJob_Frame> mAraJobList;
-        private List<AraTrailJob_Frame> mChangeAraJobList;
+        private List<GraphicNumber> mGraphicNumbers;
+        private List<AraTrailJob> mAraJobList;
+        private List<AraTrailJob> mChangeAraJobList;
         private List<EChangeType> mEChangeTypeList;
-        //private NativeList<AraTrailJob_Frame.AraHead> mHeadList;
+        //private NativeList<AraTrailJob.AraHead> mHeadList;
 
-        private NativeList<AraTrailJob_Frame.Head> mHeadList;                 
-        private NativeList<AraTrailJob_Frame.Point> mPoints;
+        private NativeList<AraTrailJob.Head> mHeadList;                 
+        private NativeList<AraTrailJob.Point> mPoints;
         private NativeList<Keyframe> mLengthCurve;
         private NativeList<GradientColorKey> mLengthGradientColor;
         private NativeList<GradientAlphaKey> mLengthGradientAlpha;
@@ -75,7 +93,34 @@ namespace AraJob
         private void LateUpdate()
         {
             this.HandleChangeList();
+            this.UpdateJobsData();
 
+            UpdateTrailMeshJob job = new UpdateTrailMeshJob
+            {
+                mHeadArray = this.mHeadList,
+                mPoints = this.mPoints,
+                mLengthThickCurve = this.mLengthCurve,
+                mLengthThickColorKeys = this.mLengthGradientColor,
+                mLengthThickAlphaKeys = this.mLengthGradientAlpha,
+                mLengthModel = this.mLengthGradientMode,
+                mTimeThickCurve = this.mTimeCurve,
+                mTimeThickColorKeys = this.mTimeGradientColor,
+                mTimeThickAlphaKeys = this.mTimeGradientAlpha,
+                mTimeModel = this.mTimeGradientMode,
+
+                Vertices = this.vertices,
+                Tangents = this.tangents,
+                VertColors = this.vertColors,
+                Uvs = this.uvs,
+                Tris = this.tris,
+                Normals = this.normals
+            };
+
+            this.mLateUpdateJobHandle = job.Schedule(this.mHeadList.Length, 32, this.mLateUpdateJobHandle);
+            this.mLateUpdateJobHandle.Complete();
+            this.DrawUpdateMeshData();
+
+            
         }
 
         private void OnDestroy()
@@ -156,12 +201,14 @@ namespace AraJob
 
         private void Initialize()
         {
-            this.mAraJobList = new List<AraTrailJob_Frame>();
-            this.mChangeAraJobList = new List<AraTrailJob_Frame>();
+            this.mGraphicNumbers = new List<GraphicNumber>();
+            this.mAraJobList = new List<AraTrailJob>();
+            this.mChangeAraJobList = new List<AraTrailJob>();
             this.mEChangeTypeList = new List<EChangeType>();
+            
 
-            this.mHeadList = new NativeList<AraTrailJob_Frame.Head>(HEAD_SIZE, Allocator.Persistent);
-            this.mPoints = new NativeList<AraTrailJob_Frame.Point>(HEAD_SIZE * POINT_CHUNK_SIZE, Allocator.Persistent);
+            this.mHeadList = new NativeList<AraTrailJob.Head>(HEAD_SIZE, Allocator.Persistent);
+            this.mPoints = new NativeList<AraTrailJob.Point>(HEAD_SIZE * POINT_CHUNK_SIZE, Allocator.Persistent);
 
             this.mLengthCurve = new NativeList<Keyframe>(HEAD_SIZE * KEYFRAME_COUNT, Allocator.Persistent);
             this.mLengthGradientColor = new NativeList<GradientColorKey>(HEAD_SIZE * GRADIENT_COUNT, Allocator.Persistent);
@@ -181,12 +228,12 @@ namespace AraJob
             this.normals = new NativeList<Vector3>(HEAD_SIZE * POINT_CHUNK_SIZE * VERTICES_SIZE, Allocator.Persistent);
         }
 
-        public void OnEnter(AraTrailJob_Frame rAraTrailJob)
+        public void OnEnter(AraTrailJob rAraTrailJob)
         {
             this.mChangeAraJobList.Add(rAraTrailJob);
             this.mEChangeTypeList.Add(EChangeType.Add);
         }
-        public void OnExit(AraTrailJob_Frame rAraTrailJob)
+        public void OnExit(AraTrailJob rAraTrailJob)
         {
             this.mChangeAraJobList.Add(rAraTrailJob);
             this.mEChangeTypeList.Add(EChangeType.Remove);
@@ -196,7 +243,7 @@ namespace AraJob
         {
             for (int i = 0; i < this.mChangeAraJobList.Count; i++)
             {
-                AraTrailJob_Frame rAraTrail = this.mChangeAraJobList[i];
+                AraTrailJob rAraTrail = this.mChangeAraJobList[i];
                 EChangeType rEChangeType = this.mEChangeTypeList[i];
                 int nIndex = this.mAraJobList.IndexOf(rAraTrail);
                 if(rEChangeType == EChangeType.Add)
@@ -210,7 +257,7 @@ namespace AraJob
                     this.mAraJobList.Add(rAraTrail);
 
                     //setting head info
-                    AraTrailJob_Frame.Head rHead = new AraTrailJob_Frame.Head
+                    AraTrailJob.Head rHead = new AraTrailJob.Head
                     {
                         localPosition = rAraTrail.transform.localPosition,
                         position = rAraTrail.transform.position,
@@ -261,7 +308,7 @@ namespace AraJob
                         index_tris = nIndex * GRADIENT_COUNT * VERTICES_SIZE * TRIANGLE_MUL,
                         index_normals = nIndex * GRADIENT_COUNT * VERTICES_SIZE,
                         //length record.
-                        len_point = math.min(POINT_CHUNK_SIZE, rAraTrail.points.Count),
+                        //len_point = math.min(POINT_CHUNK_SIZE, rAraTrail.points.Count),
                         len_lengthCurve = math.min(KEYFRAME_COUNT, rAraTrail.thicknessOverLenght.keys.Length),
                         len_lengthGradientAlpha = math.min(GRADIENT_COUNT, rAraTrail.colorOverLenght.alphaKeys.Length),
                         len_lengthGradientColor = math.min(GRADIENT_COUNT, rAraTrail.colorOverLenght.colorKeys.Length),
@@ -272,8 +319,25 @@ namespace AraJob
                     };
                     this.mHeadList.Add(rHead);
 
+                    GraphicNumber rGraphicNumber = new GraphicNumber();
+                    rGraphicNumber.mesh = rAraTrail.mesh;
+                    rGraphicNumber.materials = new Material[rAraTrail.materials.Length];
+                    for (int j = 0; j < rAraTrail.materials.Length; j++)
+                    {
+                        rGraphicNumber.materials[j] = rAraTrail.materials[j];
+                    }
+                    rGraphicNumber.cam = rAraTrail.tempCamera;
+                    rGraphicNumber.matrix = rAraTrail.space == Space.Self && rAraTrail.transform.parent != null ? rAraTrail.transform.parent.localToWorldMatrix : Matrix4x4.identity;
+                    rGraphicNumber.gameObjectLayer = rAraTrail.gameObject.layer;
+                    rGraphicNumber.castShadows = rAraTrail.castShadows;
+                    rGraphicNumber.receiveShadows = rAraTrail.receiveShadows;
+                    rGraphicNumber.useLightProbes = rAraTrail.useLightProbes;
+                    rGraphicNumber.uvFlowX = rAraTrail.uvFlowX;
+                    rGraphicNumber.uvFlowY = rAraTrail.uvFlowY;
+                    this.mGraphicNumbers.Add(rGraphicNumber);
 
-                    if(rAraTrail.thicknessOverLenght.keys.Length >= KEYFRAME_COUNT)
+
+                    if (rAraTrail.thicknessOverLenght.keys.Length >= KEYFRAME_COUNT)
                     {
                         Debug.LogError($"AnimationCurve 顶点数不要超过{KEYFRAME_COUNT}个，{rAraTrail.name}配置了{rAraTrail.thicknessOverLenght.keys.Length}个");
                         return;
@@ -350,6 +414,24 @@ namespace AraJob
                         }
                     }
 
+                    
+                    for (int j = 0; j < POINT_CHUNK_SIZE; j++)
+                    {
+                        this.mPoints.Add(new Point());
+                    }
+
+                    for(int j = 0; j < POINT_CHUNK_SIZE * VERTICES_SIZE; j++)
+                    {
+                        this.vertices.Add(new Vector3());
+                        this.tangents.Add(new Vector4());
+                        this.vertColors.Add(new Color());
+                        this.uvs.Add(new Vector3());
+                        for (int k = 0; k < TRIANGLE_MUL; k++)
+                        {
+                            this.tris.Add(0);
+                        }
+                        this.normals.Add(new Vector3());
+                    }
                 }
 
                 if(rEChangeType == EChangeType.Remove)
@@ -362,8 +444,9 @@ namespace AraJob
                     int nSwapBackIndex = this.mAraJobList.Count - 1;
                     this.mAraJobList[nIndex] = this.mAraJobList[nSwapBackIndex];
                     this.mAraJobList.RemoveAt(nSwapBackIndex);
+                    this.mGraphicNumbers.RemoveAt(nSwapBackIndex);
                     //修改索引
-                    AraTrailJob_Frame.Head rHead = this.mHeadList[nSwapBackIndex];
+                    AraTrailJob.Head rHead = this.mHeadList[nSwapBackIndex];
                     rHead.index_point = nIndex * POINT_CHUNK_SIZE;
                     rHead.index_lengthCurve = nIndex * KEYFRAME_COUNT;
                     rHead.index_lengthGradientAlpha = nIndex * GRADIENT_COUNT;
@@ -372,24 +455,44 @@ namespace AraJob
                     rHead.index_timeGradientAlpha = nIndex * GRADIENT_COUNT;
                     rHead.index_timeGradientColor = nIndex * GRADIENT_COUNT;
                     this.mHeadList[nSwapBackIndex] = rHead;
-
+                    
                     //删除NativeContainers元素
                     this.mHeadList.RemoveAtSwapBack(nIndex);
                     this.mLengthGradientMode.RemoveAtSwapBack(nIndex);
                     this.mTimeGradientMode.RemoveAtSwapBack(nIndex);
-                    for (int j = (nIndex + 1) * KEYFRAME_COUNT; j >= nIndex; j--)
+                    for (int j = (nIndex + 1) * KEYFRAME_COUNT - 1; j >= nIndex * POINT_CHUNK_SIZE; j--)
                     {
                         this.mTimeCurve.RemoveAtSwapBack(j);
                         this.mLengthCurve.RemoveAtSwapBack(j);
                     }
 
-                    for (int j = (nIndex + 1) * GRADIENT_COUNT; j >= nIndex; j--)
+                    for (int j = (nIndex + 1) * GRADIENT_COUNT - 1; j >= nIndex * POINT_CHUNK_SIZE; j--)
                     {
                         this.mLengthGradientAlpha.RemoveAtSwapBack(j);
                         this.mLengthGradientColor.RemoveAtSwapBack(j);
                         this.mTimeGradientAlpha.RemoveAtSwapBack(j);
                         this.mTimeGradientColor.RemoveAtSwapBack(j);
                     }
+
+                    for (int j = (nIndex + 1) * POINT_CHUNK_SIZE - 1; j >= nIndex * POINT_CHUNK_SIZE; j--)
+                    {
+                        this.mPoints.RemoveAtSwapBack(j);
+                    }
+
+                    for (int j = (nIndex + 1) * POINT_CHUNK_SIZE * VERTICES_SIZE - 1; j >= nIndex * POINT_CHUNK_SIZE * VERTICES_SIZE; j--)
+                    {
+                        this.vertices.RemoveAtSwapBack(j);
+                        this.vertColors.RemoveAtSwapBack(j);
+                        this.tangents.RemoveAtSwapBack(j);
+                        this.uvs.RemoveAtSwapBack(j);
+                        this.normals.RemoveAtSwapBack(j);
+                    }
+
+                    for (int j = (nIndex + 1) * POINT_CHUNK_SIZE * VERTICES_SIZE * TRIANGLE_MUL - 1; j >= nIndex * POINT_CHUNK_SIZE * VERTICES_SIZE * TRIANGLE_MUL; j--)
+                    {
+                        this.tris.RemoveAtSwapBack(j);
+                    }
+
                     Debug.Assert(this.mHeadList.Length == this.mAraJobList.Count);
                     Debug.Assert(this.mLengthGradientMode.Length == this.mAraJobList.Count);
                     Debug.Assert(this.mTimeGradientMode.Length == this.mAraJobList.Count);
@@ -408,6 +511,47 @@ namespace AraJob
             this.mEChangeTypeList.Clear();
         }
 
+        private void UpdateJobsData()
+        {
+            for (int i = 0; i < this.mAraJobList.Count; i++)
+            {
+                var rHead = this.mHeadList[i];
+                rHead.localPosition = this.mAraJobList[i].transform.localPosition;
+                rHead.position = this.mAraJobList[i].transform.position;
+                rHead.tangent = this.mAraJobList[i].transform.right;
+                rHead.normal = this.mAraJobList[i].transform.forward;
+                rHead.up = this.mAraJobList[i].transform.up;
+                this.mHeadList[i] = rHead;
+            }
+        }
+
+        private void DrawUpdateMeshData()
+        {
+            for (int i = 0; i < this.mAraJobList.Count; i++)
+            {
+                GraphicNumber rGraphicNumber = this.mGraphicNumbers[i];
+                Head rhead = this.mHeadList[i];
+                Mesh mesh = rGraphicNumber.mesh;
+                mesh.Clear();
+                mesh.SetVertices(this.vertices.ToArray(), rhead.index_vertices, rhead.len_vertices);
+                mesh.SetNormals(this.vertices.ToArray(), rhead.index_normals, rhead.len_normals);
+                mesh.SetTangents(this.tangents.ToArray(), rhead.index_tangents, rhead.len_tangents);
+                mesh.SetColors(this.vertColors.ToArray(), rhead.index_vertColors, rhead.len_vertColors);
+                mesh.SetUVs(0, this.uvs.ToArray(), rhead.index_uvs, rhead.len_uvs);
+                mesh.SetTriangles(this.tris.ToArray(), rhead.index_tris, rhead.len_tris, 0, true);
+                for (int j = 0; i < rGraphicNumber.materials.Length; j++)
+                {
+                    if (rGraphicNumber.materials[j] == null)
+                        continue;
+
+                    rGraphicNumber.materials[j].EnableKeyword("_UV_FLOW_ON");
+                    rGraphicNumber.materials[j].SetVector("_UVFlow", new Vector4(rGraphicNumber.uvFlowX, rGraphicNumber.uvFlowY, 0, 0));
+
+                    Graphics.DrawMesh(mesh, rGraphicNumber.matrix,
+                                      rGraphicNumber.materials[j], rGraphicNumber.gameObjectLayer, rGraphicNumber.cam, 0, null, rGraphicNumber.castShadows, rGraphicNumber.receiveShadows, null, rGraphicNumber.useLightProbes);
+                }
+            }
+        }
 
 
         [ContextMenu("打印空间占用")]
@@ -419,11 +563,6 @@ namespace AraJob
             Debug.Log($"{num}");
         }
 
-
-
-
-
-
     }
 
 
@@ -431,35 +570,49 @@ namespace AraJob
     public struct UpdateTrailMeshJob : IJobParallelFor
     {
         public NativeList<Point> mPoints;
-        public NativeArray<Head> mHeadArray;
+        public NativeList<Head> mHeadArray;
         //public NativeList<int> discontinuities;
 
-        public NativeList<Keyframe> mLengthThickCurve;
-        public NativeList<GradientColorKey> mLengthThickColorKeys;
-        public NativeList<GradientAlphaKey> mLengthThickAlphaKeys;
-        public NativeList<Keyframe> mTimeThickCurve;
-        public NativeList<GradientColorKey> mTimeThickColorKeys;
-        public NativeList<GradientAlphaKey> mTimeThickAlphaKeys;
+        [ReadOnly] public NativeList<Keyframe> mLengthThickCurve;
+        [ReadOnly] public NativeList<GradientColorKey> mLengthThickColorKeys;
+        [ReadOnly] public NativeList<GradientAlphaKey> mLengthThickAlphaKeys;
+        [ReadOnly] public NativeList<GradientMode> mLengthModel;
 
-        public NativeList<GradientMode> mLengthModel;
-        public NativeList<GradientMode> mTimeModel;
+        [ReadOnly] public NativeList<Keyframe> mTimeThickCurve;
+        [ReadOnly] public NativeList<GradientColorKey> mTimeThickColorKeys;
+        [ReadOnly] public NativeList<GradientAlphaKey> mTimeThickAlphaKeys;
+        [ReadOnly] public NativeList<GradientMode> mTimeModel;
 
 
-        public NativeList<Vector3> vertices;
-        public NativeList<Vector4> tangents;
-        public NativeList<Color> vertColors;
-        public NativeList<Vector3> uvs;
-        public NativeList<int> tris;
-        public NativeList<Vector3> normals;
+        public NativeList<Vector3> Vertices;
+        public NativeList<Vector4> Tangents;
+        public NativeList<Color> VertColors;
+        public NativeList<Vector3> Uvs;
+        public NativeList<int> Tris;
+        public NativeList<Vector3> Normals;
+
+
+        NativeList<Vector3> vertices;
+        NativeList<Vector4> tangents;
+        NativeList<Color> vertColors;
+        NativeList<Vector3> uvs;
+        NativeList<int> tris;
+        NativeList<Vector3> normals;
 
 
 
         public void Execute(int index)
         {
+            vertices = new NativeList<Vector3>(Allocator.Temp);
+            tangents = new NativeList<Vector4>(Allocator.Temp);
+            vertColors = new NativeList<Color>(Allocator.Temp);
+            uvs = new NativeList<Vector3>(Allocator.Temp);
+            tris = new NativeList<int>(Allocator.Temp);
+            normals = new NativeList<Vector3>(Allocator.Temp);
 
-            ClearMeshData();
+            ClearMeshData(index);
 
-            Head rHead = mHeadArray[0];
+            Head rHead = mHeadArray[index];
             if (rHead.DeltaTime > 0)
             {
                 rHead.velocity = Vector3.Lerp((rHead.position - rHead.prevPosition) / rHead.DeltaTime, rHead.velocity, rHead.velocitySmoothing);
@@ -478,38 +631,40 @@ namespace AraJob
                     // Select the emission position, depending on the simulation space:
                     Vector3 position = rHead.space == Space.Self ? rHead.localPosition : rHead.position;
                     // If there's at least 1 point and it is not far enough from the current position, don't spawn any new points this frame.
-                    if (mPoints.Length <= 1 || Vector3.Distance(position, mPoints[mPoints.Length - 2].position) >= rHead.minDistance)
+                    if (rHead.len_point <= 1 || Vector3.Distance(position, mPoints[(rHead.index_point + rHead.len_point) - 2].position) >= rHead.minDistance)
                     {
-                        mPoints.Add(new Point(position, rHead.initialVelocity + rHead.velocity * rHead.inertia, rHead.tangent, rHead.normal, rHead.initialColor, rHead.initialThickness, rHead.time));
+                        //mPoints.Add(new Point(position, rHead.initialVelocity + rHead.velocity * rHead.inertia, rHead.tangent, rHead.normal, rHead.initialColor, rHead.initialThickness, rHead.time));
+                        mPoints[rHead.index_point + rHead.len_point] = new Point(position, rHead.initialVelocity + rHead.velocity * rHead.inertia, rHead.tangent, rHead.normal, rHead.initialColor, rHead.initialThickness, rHead.time);
+                        rHead.len_point++;
                         rHead.accumTime = 0;
                         //Debug.Log($"rHead.accumTime: {rHead.accumTime}  mPoints: {mPoints.Length}");
                     }
                 }
             }
-            mHeadArray[0] = rHead;
 
-            if (mPoints.Length > 0)
+
+            if (rHead.len_point > 0)
             {
 
-                Point lastPoint = mPoints[mPoints.Length - 1];
+                Point lastPoint = mPoints[(rHead.index_point + rHead.len_point) - 1];
 
                 // if we are not emitting, the last point is a discontinuity.
-                if (!mHeadArray[0].emit)
+                if (!rHead.emit)
                     lastPoint.discontinuous = true;
 
                 // if the point is discontinuous, move and orient it according to the transform.
                 if (!lastPoint.discontinuous)
                 {
-                    lastPoint.position = mHeadArray[0].space == Space.Self ? mHeadArray[0].localPosition : mHeadArray[0].position;
-                    lastPoint.normal = mHeadArray[0].normal;
-                    lastPoint.tangent = mHeadArray[0].tangent;
+                    lastPoint.position = rHead.space == Space.Self ? rHead.localPosition : rHead.position;
+                    lastPoint.normal = rHead.normal;
+                    lastPoint.tangent = rHead.tangent;
                 }
 
-                mPoints[mPoints.Length - 1] = lastPoint;
+                mPoints[(rHead.index_point + rHead.len_point) - 1] = lastPoint;
             }
 
 
-            for (int i = mPoints.Length - 1; i >= 0; --i)
+            for (int i = (rHead.index_point + rHead.len_point) - 1; i >= rHead.index_point; --i)
             {
 
                 Point point = mPoints[i];
@@ -520,23 +675,25 @@ namespace AraJob
                 {
 
                     // Unsmoothed trails delete points as soon as they die.
-                    if (mHeadArray[0].smoothness <= 1)
+                    if (rHead.smoothness <= 1)
                     {
-                        mPoints.RemoveAt(i);
+                        //mPoints.RemoveAt(i);
+                        rHead.len_point--;
                     }
                     // Smoothed trails however, should wait until the next 2 points are dead too. This ensures spline continuity.
                     else
                     {
-                        if (mPoints[Mathf.Min(i + 1, mPoints.Length - 1)].life <= 0 &&
-                            mPoints[Mathf.Min(i + 2, mPoints.Length - 1)].life <= 0)
-                            mPoints.RemoveAt(i);
+                        if (mPoints[Mathf.Min(i + 1, (rHead.index_point + rHead.len_point) - 1)].life <= 0 &&
+                            mPoints[Mathf.Min(i + 2, (rHead.index_point + rHead.len_point) - 1)].life <= 0)
+                            rHead.len_point--;
+                            //mPoints.RemoveAt(i);
                     }
 
                 }
             }
 
             // We need at least two points to create a trail mesh.
-            if (mPoints.Length > 1)
+            if ((rHead.index_point + rHead.len_point) > 1)
             {
 
                 //Vector3 localCamPosition = rHead.space == Space.Self && transform.parent != null ? transform.parent.InverseTransformPoint(cam.transform.position) : cam.transform.position;
@@ -546,28 +703,81 @@ namespace AraJob
                 //discontinuities.Clear();
                 //public NativeList<int> discontinuities = new NativeList<int>(Allocator.Temp);
                 NativeList<int> discontinuities = new NativeList<int>(Allocator.Temp);
-                for (int i = 0; i < mPoints.Length; ++i)
-                    if (mPoints[i].discontinuous || i == mPoints.Length - 1) discontinuities.Add(i);
+                for (int i = rHead.index_point; i < (rHead.index_point + rHead.len_point); ++i)
+                    if (mPoints[i].discontinuous || i == (rHead.index_point + rHead.len_point) - 1) discontinuities.Add(i);
 
                 // generate mesh for each trail segment:
-                int start = 0;
+                int start = rHead.index_point;
                 for (int i = 0; i < discontinuities.Length; ++i)
                 {
-                    UpdateSegmentMesh(mPoints, start, discontinuities[i], mHeadArray[0].localCamPosition, index);
+                    UpdateSegmentMesh(mPoints, start, discontinuities[i], rHead.localCamPosition, index);
                     start = discontinuities[i] + 1;
                 }
 
+
+
+                rHead.len_vertices = vertices.Length;
+                rHead.len_tangents = tangents.Length;
+                rHead.len_vertColors = vertColors.Length;
+                rHead.len_uvs = uvs.Length;
+                rHead.len_tris = tris.Length;
+                rHead.len_normals = normals.Length;
+
+                for (int j = rHead.index_vertices, k = 0; j < (rHead.index_vertices + rHead.len_vertices); j++, k++)
+                {
+                    Vertices[j] = vertices[k];
+                }
+               
+                for (int j = rHead.index_tangents, k = 0; j < (rHead.index_tangents + rHead.len_tangents); j++, k++)
+                {
+                    Tangents[j] = tangents[k];
+                }
+
+                for (int j = rHead.len_vertColors, k = 0; j < (rHead.index_vertColors + rHead.len_vertColors); j++, k++)
+                {
+                    VertColors[j] = vertColors[k];
+                }
+
+                for (int j = rHead.index_uvs, k = 0; j < (rHead.index_uvs + rHead.len_uvs); j++, k++)
+                {
+                    Uvs[j] = uvs[k];
+                }
+
+                for (int j = rHead.index_tris, k = 0; j < (rHead.index_tris + rHead.len_tris); j++, k++)
+                {
+                    Tris[j] = tris[k];
+                }
+
+                for (int j = rHead.index_normals, k = 0; j < (rHead.index_normals + rHead.len_normals); j++, k++)
+                {
+                    Normals[j] = normals[k];
+                }
+
+
+                this.vertices.Dispose();
+                this.tangents.Dispose();
+                this.vertColors.Dispose();
+                this.uvs.Dispose();
+                this.tris.Dispose();
+                this.normals.Dispose();
+
+
+
+                mHeadArray[index] = rHead;
                 //CommitMeshData();
 
                 //RenderMesh(cam);
+
+
+
             }
         }
 
         private void UpdateSegmentMesh(NativeList<Point> input, int start, int end, Vector3 localCamPosition, int nIndex)
         {
-            Head rHead = mHeadArray[0];
+            Head rHead = mHeadArray[nIndex];
             // Get a list of the actual points to render: either the original, unsmoothed points or the smoothed curve.
-            NativeList<Point> trail = GetRenderablePoints(input, start, end);
+            NativeList<Point> trail = GetRenderablePoints(input, start, end, nIndex);
             //NativeList<Point> trail = input;
 
             if (trail.Length > 1)
@@ -634,8 +844,42 @@ namespace AraJob
                     //              colorOverTime.Evaluate(normalizedLife) *
                     //              colorOverLenght.Evaluate(normalizedLength);
                     //vertexColor = curPoint.color * timeThickColor[i] * lengthThickColor[i];
-                    vertexColor = curPoint.color * UnitySrcAssist.GradientEvaluate(mTimeThickColorKeys, mTimeThickAlphaKeys, mTimeModel[nIndex], normalizedLife)
-                                                 * UnitySrcAssist.GradientEvaluate(mLengthThickColorKeys, mTimeThickAlphaKeys, mLengthModel[nIndex], normalizedLength);
+                    NativeList<GradientColorKey> lColorKeys = new NativeList<GradientColorKey>(Allocator.Temp);
+                    NativeList<GradientAlphaKey> lAlphaKeys = new NativeList<GradientAlphaKey>(Allocator.Temp);
+                    NativeList<GradientColorKey> tColorKeys = new NativeList<GradientColorKey>(Allocator.Temp);
+                    NativeList<GradientAlphaKey> tAlphaKeys = new NativeList<GradientAlphaKey>(Allocator.Temp);
+                    NativeList<Keyframe> lKeyFrames = new NativeList<Keyframe>(Allocator.Temp);
+                    NativeList<Keyframe> tKeyFrames = new NativeList<Keyframe>(Allocator.Temp);
+
+
+                    for (int j = rHead.index_lengthCurve; j < rHead.len_lengthCurve; j++)
+                    {
+                        lKeyFrames.Add(mLengthThickCurve[j]);
+                    }
+                    for (int j = rHead.index_lengthGradientColor; j < rHead.len_lengthGradientColor; j++)
+                    {
+                        lColorKeys.Add(mLengthThickColorKeys[j]);
+                    }
+                    for (int j = rHead.index_lengthGradientAlpha; j < rHead.len_lengthGradientAlpha; j++)
+                    {
+                        lAlphaKeys.Add(mLengthThickAlphaKeys[j]);
+                    }
+
+                    for (int j = rHead.index_timeCurve; j < rHead.len_timeCurve; j++)
+                    {
+                        tKeyFrames.Add(mTimeThickCurve[j]);
+                    }
+                    for (int j = rHead.index_timeGradientColor; j < rHead.len_timeGradientColor; j++)
+                    {
+                        tColorKeys.Add(mTimeThickColorKeys[j]);
+                    }
+                    for (int j = rHead.index_timeGradientAlpha; j < rHead.len_timeGradientAlpha; j++)
+                    {
+                        tAlphaKeys.Add(mTimeThickAlphaKeys[j]);
+                    }
+
+                    vertexColor = curPoint.color * UnitySrcAssist.GradientEvaluate(tColorKeys, tAlphaKeys, mTimeModel[nIndex], normalizedLife)
+                                                 * UnitySrcAssist.GradientEvaluate(lColorKeys, lAlphaKeys, mLengthModel[nIndex], normalizedLength);
 
 
                     // Update vcoord:
@@ -644,8 +888,15 @@ namespace AraJob
                     // Calulate final thickness:
                     //float sectionThickness = rHead.thickness * curPoint.thickness * thicknessOverTime.Evaluate(normalizedLife) * thicknessOverLenght.Evaluate(normalizedLength);
                     //float sectionThickness = rHead.thickness * curPoint.thickness * timeThickCurve[i] * lengthThickCurve[i];
-                    float sectionThickness = rHead.thickness * curPoint.thickness * UnitySrcAssist.AnimationCurveEvaluate(mTimeThickCurve, normalizedLife)
-                                                                                  * UnitySrcAssist.AnimationCurveEvaluate(mLengthThickCurve, normalizedLength);
+                    float sectionThickness = rHead.thickness * curPoint.thickness * UnitySrcAssist.AnimationCurveEvaluate(tKeyFrames, normalizedLife)
+                                                                                  * UnitySrcAssist.AnimationCurveEvaluate(lKeyFrames, normalizedLength);
+
+                    lColorKeys.Dispose();
+                    lAlphaKeys.Dispose();
+                    tColorKeys.Dispose();
+                    lKeyFrames.Dispose();
+                    tAlphaKeys.Dispose();
+                    tKeyFrames.Dispose();
 
                     Quaternion q = Quaternion.identity;
                     Vector3 corner = Vector3.zero;
@@ -773,9 +1024,9 @@ namespace AraJob
 
         }
 
-        private NativeList<Point> GetRenderablePoints(NativeList<Point> input, int start, int end)
+        private NativeList<Point> GetRenderablePoints(NativeList<Point> input, int start, int end, int index)
         {
-            Head rHead = mHeadArray[0];
+            Head rHead = mHeadArray[index];
             NativeList<Point> points = mPoints;
             //renderablePoints.Clear();
 
@@ -847,15 +1098,22 @@ namespace AraJob
             return new CurveFrame(point, rHead.normal, rHead.up, tangent);
         }
 
-        private void ClearMeshData()
+        private void ClearMeshData(int nIndex)
         {
-            vertices.Clear();
-            normals.Clear();
-            tangents.Clear();
-            uvs.Clear();
-            vertColors.Clear();
-            tris.Clear();
-
+            //vertices.Clear();
+            //normals.Clear();
+            //tangents.Clear();
+            //uvs.Clear();
+            //vertColors.Clear();
+            //tris.Clear();
+            Head rHead = mHeadArray[nIndex];
+            rHead.len_vertices = 0;
+            rHead.len_tangents = 0;
+            rHead.len_vertColors = 0;
+            rHead.len_uvs = 0;
+            rHead.len_tris = 0;
+            rHead.len_normals = 0;
+            mHeadArray[nIndex] = rHead;
         }
 
     }

@@ -101,6 +101,11 @@ public class Busy : MonoBehaviour
         nArray.Dispose();
     }
 
+    [ContextMenu("Show Detail data")]
+    public void ShowData()
+    {
+        Debug.Log(this.transform.right);
+    }
 
     public struct MyJob : IJob
     {

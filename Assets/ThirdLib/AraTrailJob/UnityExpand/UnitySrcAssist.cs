@@ -226,6 +226,226 @@ namespace AraJob
         }
 
 
+
+        //public static Color GradientEvaluate(NativeList<GradientColorKey> rGradientColorKeys, int nColorIndex, int nColorLength,
+        //    NativeList<GradientAlphaKey> rGradientAlphaKeys, int nAlphaIndex, int nAlphaLenght,
+        //    GradientMode rMode, float fTime)
+        //{
+        //    //rGradientColorKeys length 2-8
+        //    //rGradientAlphaKeys length 2-8
+        //    Color nColor = Color.white;
+        //    float fAlpha = 1f;
+        //    fTime = Mathf.Clamp(fTime, 0f, 1f);
+
+        //    switch (rMode)
+        //    {
+        //        case GradientMode.Blend:
+
+        //            //Color Blend
+        //            if (fTime <= rGradientColorKeys[nColorIndex].time)
+        //            {
+        //                nColor = rGradientColorKeys[nColorIndex].color;
+        //            }
+        //            else if (fTime >= rGradientColorKeys[nColorLength - 1].time)
+        //            {
+        //                nColor = rGradientColorKeys[nColorLength - 1].color;
+        //            }
+        //            else
+        //            {
+        //                for (int i = nColorIndex; i < nColorLength; i++)
+        //                {
+        //                    if (fTime == rGradientColorKeys[i].time)
+        //                    {
+        //                        nColor = rGradientColorKeys[i].color;
+        //                        break;
+        //                    }
+        //                    else if (fTime < rGradientColorKeys[i].time)
+        //                    {
+
+        //                        Color preColor = rGradientColorKeys[i - 1].color;
+        //                        Color nextColor = rGradientColorKeys[i].color;
+
+        //                        float length = rGradientColorKeys[i].time - rGradientColorKeys[i - 1].time;
+        //                        nColor = Color.Lerp(preColor, nextColor, (fTime - rGradientColorKeys[i - 1].time) / length);
+        //                        break;
+        //                    }
+        //                }
+        //            }
+
+
+        //            //Alpha Blend
+        //            if (fTime <= rGradientAlphaKeys[nAlphaIndex].time)
+        //            {
+        //                fAlpha = rGradientAlphaKeys[nAlphaIndex].alpha;
+        //            }
+        //            else if (fTime >= rGradientAlphaKeys[nAlphaLenght - 1].time)
+        //            {
+        //                fAlpha = rGradientAlphaKeys[nAlphaLenght - 1].alpha;
+        //            }
+        //            else
+        //            {
+        //                for (int i = nAlphaIndex; i < nAlphaLenght; i++)
+        //                {
+        //                    if (fTime == rGradientAlphaKeys[i].time)
+        //                    {
+        //                        fAlpha = rGradientAlphaKeys[i].alpha;
+        //                        break;
+        //                    }
+        //                    else if (fTime < rGradientAlphaKeys[i].time)
+        //                    {
+        //                        float preAlpha = rGradientAlphaKeys[i - 1].alpha;
+        //                        float nextAlpha = rGradientAlphaKeys[i].alpha;
+
+        //                        float length = rGradientAlphaKeys[i].time - rGradientAlphaKeys[i - 1].time;
+        //                        fAlpha = Mathf.Lerp(preAlpha, nextAlpha, (fTime - rGradientAlphaKeys[i - 1].time) / length);
+        //                        break;
+        //                    }
+        //                }
+        //            }
+
+        //            break;
+        //        case GradientMode.Fixed:
+
+        //            //Color Blend
+        //            if (fTime <= rGradientColorKeys[0].time)
+        //            {
+        //                nColor = rGradientColorKeys[0].color;
+        //            }
+        //            else if (fTime >= rGradientColorKeys[rGradientColorKeys.Length - 1].time)
+        //            {
+        //                nColor = rGradientColorKeys[rGradientColorKeys.Length - 1].color;
+        //            }
+        //            else
+        //            {
+        //                for (int i = 0; i < rGradientColorKeys.Length; i++)
+        //                {
+        //                    if (fTime <= rGradientColorKeys[i].time)
+        //                    {
+        //                        nColor = rGradientColorKeys[i].color;
+        //                        break;
+        //                    }
+        //                }
+        //            }
+
+
+
+        //            //Alpha Blend
+        //            if (fTime <= rGradientAlphaKeys[nAlphaIndex].time)
+        //            {
+        //                fAlpha = rGradientAlphaKeys[nAlphaIndex].alpha;
+        //            }
+        //            else if (fTime >= rGradientAlphaKeys[nAlphaLenght - 1].time)
+        //            {
+        //                fAlpha = rGradientAlphaKeys[nAlphaLenght - 1].alpha;
+        //            }
+        //            else
+        //            {
+        //                for (int i = nAlphaIndex; i < nAlphaLenght; i++)
+        //                {
+        //                    if (fTime <= rGradientAlphaKeys[i].time)
+        //                    {
+        //                        fAlpha = rGradientAlphaKeys[i].alpha;
+        //                        break;
+        //                    }
+        //                }
+        //            }
+
+        //            break;
+        //        default:
+        //            break;
+        //    }
+
+        //    nColor.a = fAlpha;
+        //    return nColor;
+        //}
+
+        //public static float AnimationCurveEvaluate(NativeList<Keyframe> rKeyframes, float fTime)
+        //{
+        //    float fValue;
+
+        //    int keyNumber = rKeyframes.Length;
+        //    if (keyNumber == 1)
+        //    {
+        //        fValue = rKeyframes[0].value;
+        //    }
+        //    else
+        //    {
+        //        Keyframe startPoint, endPoint;
+        //        startPoint = rKeyframes[0];
+        //        endPoint = rKeyframes[keyNumber - 1];
+
+        //        if (fTime <= startPoint.time)
+        //            fValue = startPoint.value;
+        //        else if (fTime >= endPoint.time)
+        //            fValue = endPoint.value;
+        //        else
+        //        {
+        //            //找到相邻左右临界点
+        //            Keyframe prePoint, nextPoint;
+        //            prePoint = startPoint;
+        //            nextPoint = endPoint;
+
+        //            for (int i = 0; i < keyNumber; i++)
+        //            {
+        //                if (fTime >= rKeyframes[i].time && fTime < rKeyframes[i + 1].time)
+        //                {
+        //                    prePoint = rKeyframes[i];
+        //                    nextPoint = rKeyframes[i + 1];
+        //                    break;
+        //                }
+        //            }
+
+        //            ////计算Hermite曲线参数  Mh   Gh => K = [K0  K1  K2 K4]
+        //            //float K0, K1, K2, K3;
+        //            //float dx = nextPoint.time - prePoint.time;
+        //            //dx = Math.Max(dx, 0.0001f);
+        //            //float dy = nextPoint.value - prePoint.value;
+        //            //float length = 1.0f / (dx * dx);
+
+        //            //float R0 = prePoint.outTangent;
+        //            //float R1 = nextPoint.inTangent;
+        //            //float d1 = R0 * dx;
+        //            //float d2 = R1 * dx;
+
+        //            //K0 = (d1 + d2 - dy - dy) * length / dx;
+        //            //K1 = (dy + dy + dy - d1 - d1 - d2) * length;
+        //            //K2 = R0;
+        //            //K3 = prePoint.value;
+
+        //            ////计算t
+        //            //float t = fTime - prePoint.time;
+        //            ////代入Hermite曲线公式
+        //            //fValue = (t * (t * (t * K0) + K1) + K2) + K3;
+
+        //            if (math.isinf(prePoint.outTangent) || math.isinf(nextPoint.inTangent))
+        //            {
+        //                return prePoint.value;
+        //            }
+
+
+        //            //return (float)AnimationCurveInterpolant(prePoint.time, prePoint.value, prePoint.outTangent, prePoint.outWeight, 
+        //            //                                 nextPoint.time, nextPoint.value, nextPoint.inTangent, nextPoint.inWeight,
+        //            //                                 fTime);
+
+        //            //if (prePoint.outWeight == 0)
+        //            //    prePoint.outWeight = 1.0f / 3.0f;
+        //            //if (nextPoint.inWeight == 0)
+        //            //    nextPoint.inWeight = 1.0f / 3.0f;
+
+        //            return HermiteInterpolate(prePoint, nextPoint, fTime);
+        //            //fValue = HermiteInterpolate(prePoint, nextPoint, fTime);
+        //            //fValue = BezierInterpolate(prePoint, nextPoint, fTime);
+
+        //            //if (prePoint.outWeight == 1.0f / 3.0f && nextPoint.inWeight == 1.0f / 3.0f)
+        //            //{
+        //            //    return HermiteInterpolate(prePoint, nextPoint, fTime);
+        //            //}
+        //            //return BezierInterpolate(prePoint, nextPoint, fTime);
+        //        }
+        //    }
+        //    return fValue;
+        //}
+
         #region AnimationCurve Methods
 
         static float HermiteInterpolate(Keyframe prePoint, Keyframe nextPoint, float fTime)
