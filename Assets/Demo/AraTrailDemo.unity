@@ -194,6 +194,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12e3de66d03ff5a4b9d1135077fd9173, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mAraJobList: []
 --- !u!4 &612068466
 Transform:
   m_ObjectHideFlags: 0
@@ -708,7 +709,7 @@ MonoBehaviour:
   Camera: {fileID: 980096486}
   TrailPrefab: {fileID: 1753415968}
   TrailJobPrefab: {fileID: 695981994}
-  GenerateCount: 300
+  GenerateCount: 2
   ClipPlane: 1000
   Speed: 20
   PosArray: []

@@ -18,8 +18,8 @@ namespace AraJob
         private static AraTrailJobManager mInstance;
         public static AraTrailJobManager Instance => mInstance;
 
-        public const int HEAD_SIZE = 128;
-        public const int POINT_CHUNK_SIZE = 64;
+        public const int HEAD_SIZE = 100;
+        public const int POINT_CHUNK_SIZE = 400;
         public const int VERTICES_SIZE = 526;
         public const int TRIANGLE_MUL = 3;
         public const int GRADIENT_COUNT = 8;
@@ -58,7 +58,7 @@ namespace AraJob
         }
 
         private List<GraphicNumber> mGraphicNumbers;
-        private List<AraTrailJob> mAraJobList;
+        public List<AraTrailJob> mAraJobList;
         private List<AraTrailJob> mChangeAraJobList;
         private List<EChangeType> mEChangeTypeList;
         //private NativeList<AraTrailJob.AraHead> mHeadList;
@@ -116,7 +116,7 @@ namespace AraJob
                 Normals = this.normals
             };
 
-            this.mLateUpdateJobHandle = job.Schedule(this.mHeadList.Length, 1, this.mLateUpdateJobHandle);
+            this.mLateUpdateJobHandle = job.Schedule(this.mHeadList.Length, 16, this.mLateUpdateJobHandle);
             this.mLateUpdateJobHandle.Complete();
             this.DrawUpdateMeshData();
 
@@ -308,7 +308,7 @@ namespace AraJob
                         index_tris = nIndex * GRADIENT_COUNT * VERTICES_SIZE * TRIANGLE_MUL,
                         index_normals = nIndex * GRADIENT_COUNT * VERTICES_SIZE,
                         //length record.
-                        //len_point = math.min(POINT_CHUNK_SIZE, rAraTrail.points.Count),
+                        len_point = math.min(POINT_CHUNK_SIZE, rAraTrail.points.Count),
                         len_lengthCurve = math.min(KEYFRAME_COUNT, rAraTrail.thicknessOverLenght.keys.Length),
                         len_lengthGradientAlpha = math.min(GRADIENT_COUNT, rAraTrail.colorOverLenght.alphaKeys.Length),
                         len_lengthGradientColor = math.min(GRADIENT_COUNT, rAraTrail.colorOverLenght.colorKeys.Length),
@@ -396,17 +396,17 @@ namespace AraJob
 
 
                         //Time config color
-                        if (j < rHead.len_lengthGradientAlpha)
+                        if (j < rHead.index_lengthGradientAlpha)
                         {
-                            this.mLengthGradientAlpha.Add(rAraTrail.colorOverLenght.alphaKeys[j]);
+                            this.mTimeGradientAlpha.Add(rAraTrail.colorOverTime.alphaKeys[j]);
                         }
                         else
                         {
-                            this.mLengthGradientAlpha.Add(new GradientAlphaKey());
+                            this.mTimeGradientAlpha.Add(new GradientAlphaKey());
                         }
                         if (j < rHead.len_lengthGradientColor)
                         {
-                            this.mTimeGradientColor.Add(rAraTrail.colorOverLenght.colorKeys[j]);
+                            this.mTimeGradientColor.Add(rAraTrail.colorOverTime.colorKeys[j]);
                         }
                         else
                         {
@@ -539,7 +539,7 @@ namespace AraJob
                 mesh.SetColors(this.vertColors.ToArray(), rhead.index_vertColors, rhead.len_vertColors);
                 mesh.SetUVs(0, this.uvs.ToArray(), rhead.index_uvs, rhead.len_uvs);
                 mesh.SetTriangles(this.tris.ToArray(), rhead.index_tris, rhead.len_tris, 0, true);
-                for (int j = 0; i < rGraphicNumber.materials.Length; j++)
+                for (int j = 0; j < rGraphicNumber.materials.Length; j++)
                 {
                     if (rGraphicNumber.materials[j] == null)
                         continue;
@@ -570,6 +570,7 @@ namespace AraJob
     public struct UpdateTrailMeshJob : IJobParallelFor
     {
         public NativeArray<Head> mHeadArray;
+        [NativeDisableParallelForRestriction]
         public NativeArray<Point> mPoints;
 
         //public NativeList<int> discontinuities;
@@ -629,6 +630,7 @@ namespace AraJob
                     if (rHead.len_point <= 1 || Vector3.Distance(position, mPoints[(rHead.index_point + rHead.len_point) - 2].position) >= rHead.minDistance)
                     {
                         //mPoints.Add(new Point(position, rHead.initialVelocity + rHead.velocity * rHead.inertia, rHead.tangent, rHead.normal, rHead.initialColor, rHead.initialThickness, rHead.time));
+                        Debug.LogError(mPoints.Length);
                         mPoints[rHead.index_point + rHead.len_point] = new Point(position, rHead.initialVelocity + rHead.velocity * rHead.inertia, rHead.tangent, rHead.normal, rHead.initialColor, rHead.initialThickness, rHead.time);
                         rHead.len_point++;
                         rHead.accumTime = 0;
@@ -737,8 +739,46 @@ namespace AraJob
             NativeList<Vector3> normals = new NativeList<Vector3>(Allocator.Temp);
 
 
+
+
+
             if (trail.Length > 1)
             {
+
+                NativeList<GradientColorKey> lColorKeys = new NativeList<GradientColorKey>(Allocator.Temp);
+                NativeList<GradientAlphaKey> lAlphaKeys = new NativeList<GradientAlphaKey>(Allocator.Temp);
+                NativeList<GradientColorKey> tColorKeys = new NativeList<GradientColorKey>(Allocator.Temp);
+                NativeList<GradientAlphaKey> tAlphaKeys = new NativeList<GradientAlphaKey>(Allocator.Temp);
+                NativeList<Keyframe> lKeyFrames = new NativeList<Keyframe>(Allocator.Temp);
+                NativeList<Keyframe> tKeyFrames = new NativeList<Keyframe>(Allocator.Temp);
+
+
+                for (int j = rHead.index_lengthCurve; j < rHead.len_lengthCurve; j++)
+                {
+                    lKeyFrames.Add(mLengthThickCurve[j]);
+                }
+                for (int j = rHead.index_lengthGradientColor; j < rHead.len_lengthGradientColor; j++)
+                {
+                    lColorKeys.Add(mLengthThickColorKeys[j]);
+                }
+                for (int j = rHead.index_lengthGradientAlpha; j < rHead.len_lengthGradientAlpha; j++)
+                {
+                    lAlphaKeys.Add(mLengthThickAlphaKeys[j]);
+                }
+
+                for (int j = rHead.index_timeCurve; j < rHead.len_timeCurve; j++)
+                {
+                    tKeyFrames.Add(mTimeThickCurve[j]);
+                }
+                for (int j = rHead.index_timeGradientColor; j < rHead.len_timeGradientColor; j++)
+                {
+                    tColorKeys.Add(mTimeThickColorKeys[j]);
+                }
+                for (int j = rHead.index_timeGradientAlpha; j < rHead.len_timeGradientAlpha; j++)
+                {
+                    tAlphaKeys.Add(mTimeThickAlphaKeys[j]);
+                }
+                Debug.LogError($"tColorKeys: {tColorKeys.Length} tAlphaKeys: {tAlphaKeys.Length}");
 
                 float lenght = Mathf.Max(GetLenght(trail), 0.00001f);
                 float partialLenght = 0;
@@ -801,39 +841,6 @@ namespace AraJob
                     //              colorOverTime.Evaluate(normalizedLife) *
                     //              colorOverLenght.Evaluate(normalizedLength);
                     //vertexColor = curPoint.color * timeThickColor[i] * lengthThickColor[i];
-                    NativeList<GradientColorKey> lColorKeys = new NativeList<GradientColorKey>(Allocator.Temp);
-                    NativeList<GradientAlphaKey> lAlphaKeys = new NativeList<GradientAlphaKey>(Allocator.Temp);
-                    NativeList<GradientColorKey> tColorKeys = new NativeList<GradientColorKey>(Allocator.Temp);
-                    NativeList<GradientAlphaKey> tAlphaKeys = new NativeList<GradientAlphaKey>(Allocator.Temp);
-                    NativeList<Keyframe> lKeyFrames = new NativeList<Keyframe>(Allocator.Temp);
-                    NativeList<Keyframe> tKeyFrames = new NativeList<Keyframe>(Allocator.Temp);
-
-
-                    for (int j = rHead.index_lengthCurve; j < rHead.len_lengthCurve; j++)
-                    {
-                        lKeyFrames.Add(mLengthThickCurve[j]);
-                    }
-                    for (int j = rHead.index_lengthGradientColor; j < rHead.len_lengthGradientColor; j++)
-                    {
-                        lColorKeys.Add(mLengthThickColorKeys[j]);
-                    }
-                    for (int j = rHead.index_lengthGradientAlpha; j < rHead.len_lengthGradientAlpha; j++)
-                    {
-                        lAlphaKeys.Add(mLengthThickAlphaKeys[j]);
-                    }
-
-                    for (int j = rHead.index_timeCurve; j < rHead.len_timeCurve; j++)
-                    {
-                        tKeyFrames.Add(mTimeThickCurve[j]);
-                    }
-                    for (int j = rHead.index_timeGradientColor; j < rHead.len_timeGradientColor; j++)
-                    {
-                        tColorKeys.Add(mTimeThickColorKeys[j]);
-                    }
-                    for (int j = rHead.index_timeGradientAlpha; j < rHead.len_timeGradientAlpha; j++)
-                    {
-                        tAlphaKeys.Add(mTimeThickAlphaKeys[j]);
-                    }
 
                     vertexColor = curPoint.color * UnitySrcAssist.GradientEvaluate(tColorKeys, tAlphaKeys, mTimeModel[nIndex], normalizedLife)
                                                  * UnitySrcAssist.GradientEvaluate(lColorKeys, lAlphaKeys, mLengthModel[nIndex], normalizedLength);
@@ -848,12 +855,6 @@ namespace AraJob
                     float sectionThickness = rHead.thickness * curPoint.thickness * UnitySrcAssist.AnimationCurveEvaluate(tKeyFrames, normalizedLife)
                                                                                   * UnitySrcAssist.AnimationCurveEvaluate(lKeyFrames, normalizedLength);
 
-                    lColorKeys.Dispose();
-                    lAlphaKeys.Dispose();
-                    tColorKeys.Dispose();
-                    lKeyFrames.Dispose();
-                    tAlphaKeys.Dispose();
-                    tKeyFrames.Dispose();
 
                     Quaternion q = Quaternion.identity;
                     Vector3 corner = Vector3.zero;
@@ -977,7 +978,17 @@ namespace AraJob
                     }
 
                 }
+
+                lColorKeys.Dispose();
+                lAlphaKeys.Dispose();
+                tColorKeys.Dispose();
+                lKeyFrames.Dispose();
+                tAlphaKeys.Dispose();
+                tKeyFrames.Dispose();
             }
+
+
+
 
 
             rHead.len_vertices = vertices.Length;
@@ -994,11 +1005,13 @@ namespace AraJob
 
             for (int j = rHead.index_tangents, k = 0; j < (rHead.index_tangents + rHead.len_tangents); j++, k++)
             {
+                //Debug.LogError($"rHead.index_tangents: {rHead.index_tangents}  j: {j}  k: {k}");
                 Tangents[j] = tangents[k];
             }
 
-            for (int j = rHead.len_vertColors, k = 0; j < (rHead.index_vertColors + rHead.len_vertColors); j++, k++)
+            for (int j = rHead.index_vertColors, k = 0; j < (rHead.index_vertColors + rHead.len_vertColors); j++, k++)
             {
+                //Debug.LogError($"rHead.len_vertColors: {rHead.len_vertColors}  j: {j}  k: {k}");
                 VertColors[j] = vertColors[k];
             }
 
