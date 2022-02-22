@@ -33,8 +33,9 @@ namespace Game
             yield return 5;
             for (int i = 0; i < GenerateCount; i++)
             {
-                GameObject obj = GameObject.Instantiate(this.UseJobify ? this.TrailJobPrefab : this.TrailPrefab, new Vector3(Random.Range(this.PosArray[0].x, this.PosArray[1].x), Random.Range(this.PosArray[0].y, this.PosArray[1].y), 0), Quaternion.identity);
+                //GameObject obj = GameObject.Instantiate(this.UseJobify ? this.TrailJobPrefab : this.TrailPrefab, new Vector3(Random.Range(this.PosArray[0].x, this.PosArray[1].x), Random.Range(this.PosArray[0].y, this.PosArray[1].y), 0), Quaternion.identity);
                 //obj.transform.localPosition = Vector3.zero;
+                GameObject obj = GameObject.Instantiate(this.UseJobify ? this.TrailJobPrefab : this.TrailPrefab, Vector3.zero, Quaternion.identity);
                 obj.transform.SetParent(this.transform);
                 obj.SetActive(true);
                 this.TrailList.Add(obj);

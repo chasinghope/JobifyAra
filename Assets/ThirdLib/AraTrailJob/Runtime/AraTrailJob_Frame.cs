@@ -2717,7 +2717,8 @@ namespace AraJob
                 // Get a list of the actual points to render: either the original, unsmoothed points or the smoothed curve.
                 NativeList<Point> trail = GetRenderablePoints(input, start, end);
                 //NativeList<Point> trail = input;
-
+                Debug.Log($"Trail Length: {trail.Length}");
+ 
                 if (trail.Length > 1)
                 {
 

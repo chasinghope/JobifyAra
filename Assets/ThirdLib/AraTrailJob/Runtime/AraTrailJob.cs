@@ -315,12 +315,12 @@ namespace AraJob
         public float speed = 0;
         public float accumTime = 0;
 
-        private List<Vector3> vertices = new List<Vector3>();
-        private List<Vector3> normals = new List<Vector3>();
-        private List<Vector4> tangents = new List<Vector4>();
-        private List<Vector2> uvs = new List<Vector2>();
-        private List<Color> vertColors = new List<Color>();
-        private List<int> tris = new List<int>();
+        public List<Vector3> vertices = new List<Vector3>();
+        public List<Vector3> normals = new List<Vector3>();
+        public List<Vector4> tangents = new List<Vector4>();
+        public List<Vector2> uvs = new List<Vector2>();
+        public List<Color> vertColors = new List<Color>();
+        public List<int> tris = new List<int>();
 
 
         [BurstCompile]
@@ -743,7 +743,22 @@ namespace AraJob
 
         #endregion
 
-
+        public void DrawMeshData(Vector3[] vertices, int index_vertices, int len_vertices,
+            Vector3[] normals, int index_normals, int len_normals,
+            Vector4[] tangents, int index_tangents, int len_tangents,
+            Color[] vertColors, int index_vertColors, int len_vertColors,
+            Vector2[] uvs, int index_uvs, int len_uvs,
+            int[] tris, int index_tris, int len_tris)
+        {
+            mesh_.Clear();
+            mesh_.SetVertices(vertices, index_vertices, len_vertices);
+            mesh_.SetNormals(normals, index_normals, len_normals);
+            mesh_.SetTangents(tangents, index_tangents, len_tangents);
+            mesh_.SetColors(vertColors, index_vertColors, len_vertColors);
+            mesh_.SetUVs(0, uvs, index_uvs, len_uvs);
+            mesh_.SetTriangles(tris, index_tris, len_tris, 0, true);
+            RenderMesh(tempCamera);
+        }
 
 
 

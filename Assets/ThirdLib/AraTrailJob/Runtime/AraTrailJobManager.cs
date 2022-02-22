@@ -65,6 +65,7 @@ namespace AraJob
 
         private NativeList<AraTrailJob.Head> mHeadList;                 
         private NativeList<AraTrailJob.Point> mPoints;
+
         private NativeList<Keyframe> mLengthCurve;
         private NativeList<GradientColorKey> mLengthGradientColor;
         private NativeList<GradientAlphaKey> mLengthGradientAlpha;
@@ -77,7 +78,7 @@ namespace AraJob
         private NativeList<Vector3> vertices;
         private NativeList<Vector4> tangents;
         private NativeList<Color> vertColors;
-        private NativeList<Vector3> uvs;
+        private NativeList<Vector2> uvs;
         private NativeList<int> tris;
         private NativeList<Vector3> normals;
 
@@ -223,7 +224,7 @@ namespace AraJob
             this.vertices = new NativeList<Vector3>(HEAD_SIZE * POINT_CHUNK_SIZE * VERTICES_SIZE, Allocator.Persistent);
             this.tangents = new NativeList<Vector4>(HEAD_SIZE * POINT_CHUNK_SIZE * VERTICES_SIZE, Allocator.Persistent);
             this.vertColors = new NativeList<Color>(HEAD_SIZE * POINT_CHUNK_SIZE * VERTICES_SIZE, Allocator.Persistent);
-            this.uvs = new NativeList<Vector3>(HEAD_SIZE * POINT_CHUNK_SIZE * VERTICES_SIZE, Allocator.Persistent);
+            this.uvs = new NativeList<Vector2>(HEAD_SIZE * POINT_CHUNK_SIZE * VERTICES_SIZE, Allocator.Persistent);
             this.tris = new NativeList<int>(HEAD_SIZE * POINT_CHUNK_SIZE * VERTICES_SIZE * TRIANGLE_MUL, Allocator.Persistent);
             this.normals = new NativeList<Vector3>(HEAD_SIZE * POINT_CHUNK_SIZE * VERTICES_SIZE, Allocator.Persistent);
         }
@@ -527,30 +528,53 @@ namespace AraJob
 
         private void DrawUpdateMeshData()
         {
+            //Manager统一画
+            //for (int i = 0; i < this.mAraJobList.Count; i++)
+            //{
+            //    GraphicNumber rGraphicNumber = this.mGraphicNumbers[i];
+            //    Head rhead = this.mHeadList[i];
+            //    Mesh mesh = rGraphicNumber.mesh;
+            //    mesh.Clear();
+            //    mesh.SetVertices(this.vertices.ToArray(), rhead.index_vertices, rhead.len_vertices);
+            //    mesh.SetNormals(this.normals.ToArray(), rhead.index_normals, rhead.len_normals);
+            //    mesh.SetTangents(this.tangents.ToArray(), rhead.index_tangents, rhead.len_tangents);
+            //    mesh.SetColors(this.vertColors.ToArray(), rhead.index_vertColors, rhead.len_vertColors);
+            //    mesh.SetUVs(0, this.uvs.ToArray(), rhead.index_uvs, rhead.len_uvs);
+            //    mesh.SetTriangles(this.tris.ToArray(), rhead.index_tris, rhead.len_tris, 0, true);
+            //    for (int j = 0; j < rGraphicNumber.materials.Length; j++)
+            //    {
+            //        if (rGraphicNumber.materials[j] == null)
+            //            continue;
+
+            //        rGraphicNumber.materials[j].EnableKeyword("_UV_FLOW_ON");
+            //        rGraphicNumber.materials[j].SetVector("_UVFlow", new Vector4(rGraphicNumber.uvFlowX, rGraphicNumber.uvFlowY, 0, 0));
+
+            //        Graphics.DrawMesh(mesh, rGraphicNumber.matrix,
+            //                          rGraphicNumber.materials[j], rGraphicNumber.gameObjectLayer, rGraphicNumber.cam, 0, null, rGraphicNumber.castShadows, rGraphicNumber.receiveShadows, null, rGraphicNumber.useLightProbes);
+            //    }
+            //}
+
+
+
+
+
+
+            //顶点数据返回给AraTrail，由他们自己画
             for (int i = 0; i < this.mAraJobList.Count; i++)
             {
-                GraphicNumber rGraphicNumber = this.mGraphicNumbers[i];
+                AraTrailJob araTrail = this.mAraJobList[i];
                 Head rhead = this.mHeadList[i];
-                Mesh mesh = rGraphicNumber.mesh;
-                mesh.Clear();
-                mesh.SetVertices(this.vertices.ToArray(), rhead.index_vertices, rhead.len_vertices);
-                mesh.SetNormals(this.vertices.ToArray(), rhead.index_normals, rhead.len_normals);
-                mesh.SetTangents(this.tangents.ToArray(), rhead.index_tangents, rhead.len_tangents);
-                mesh.SetColors(this.vertColors.ToArray(), rhead.index_vertColors, rhead.len_vertColors);
-                mesh.SetUVs(0, this.uvs.ToArray(), rhead.index_uvs, rhead.len_uvs);
-                mesh.SetTriangles(this.tris.ToArray(), rhead.index_tris, rhead.len_tris, 0, true);
-                for (int j = 0; j < rGraphicNumber.materials.Length; j++)
-                {
-                    if (rGraphicNumber.materials[j] == null)
-                        continue;
 
-                    rGraphicNumber.materials[j].EnableKeyword("_UV_FLOW_ON");
-                    rGraphicNumber.materials[j].SetVector("_UVFlow", new Vector4(rGraphicNumber.uvFlowX, rGraphicNumber.uvFlowY, 0, 0));
 
-                    Graphics.DrawMesh(mesh, rGraphicNumber.matrix,
-                                      rGraphicNumber.materials[j], rGraphicNumber.gameObjectLayer, rGraphicNumber.cam, 0, null, rGraphicNumber.castShadows, rGraphicNumber.receiveShadows, null, rGraphicNumber.useLightProbes);
-                }
+                araTrail.DrawMeshData(this.vertices.ToArray(), rhead.index_vertices, rhead.len_vertices,
+                    this.normals.ToArray(), rhead.index_normals, rhead.len_normals,
+                    this.tangents.ToArray(), rhead.index_tangents, rhead.len_tangents,
+                    this.vertColors.ToArray(), rhead.index_vertColors, rhead.len_vertColors,
+                    this.uvs.ToArray(), rhead.index_uvs, rhead.len_uvs,
+                    this.tris.ToArray(), rhead.index_tris, rhead.len_tris
+                    );
             }
+
         }
 
 
@@ -586,12 +610,12 @@ namespace AraJob
         [ReadOnly] public NativeList<GradientMode> mTimeModel;
 
 
-        public NativeArray<Vector3> Vertices;
-        public NativeArray<Vector4> Tangents;
-        public NativeArray<Color> VertColors;
-        public NativeArray<Vector3> Uvs;
-        public NativeArray<int> Tris;
-        public NativeArray<Vector3> Normals;
+        [NativeDisableParallelForRestriction] public NativeArray<Vector3> Vertices;
+        [NativeDisableParallelForRestriction] public NativeArray<Vector4> Tangents;
+        [NativeDisableParallelForRestriction] public NativeArray<Color> VertColors;
+        [NativeDisableParallelForRestriction] public NativeArray<Vector2> Uvs;
+        [NativeDisableParallelForRestriction] public NativeArray<int> Tris;
+        [NativeDisableParallelForRestriction] public NativeArray<Vector3> Normals;
 
 
         //vertices;
@@ -665,7 +689,7 @@ namespace AraJob
             {
 
                 Point point = mPoints[i];
-                point.life -= mHeadArray[0].DeltaTime;
+                point.life -= rHead.DeltaTime;
                 mPoints[i] = point;
 
                 if (point.life <= 0)
@@ -675,22 +699,35 @@ namespace AraJob
                     if (rHead.smoothness <= 1)
                     {
                         //mPoints.RemoveAt(i);
-                        rHead.len_point--;
+                        for (int k = i; k < (rHead.index_point + rHead.len_point) - 1; k++)
+                        {
+                            mPoints[k] = mPoints[k + 1];
+                        }
+
+                        rHead.len_point--; 
                     }
                     // Smoothed trails however, should wait until the next 2 points are dead too. This ensures spline continuity.
                     else
                     {
                         if (mPoints[Mathf.Min(i + 1, (rHead.index_point + rHead.len_point) - 1)].life <= 0 &&
                             mPoints[Mathf.Min(i + 2, (rHead.index_point + rHead.len_point) - 1)].life <= 0)
-                            rHead.len_point--;
+                        {
                             //mPoints.RemoveAt(i);
+                            for (int k = i; k < (rHead.index_point + rHead.len_point) - 1; k++)
+                            {
+                                mPoints[k] = mPoints[k + 1];
+                            }
+                            rHead.len_point--;
+                        }
+                            
+                            
                     }
 
                 }
             }
 
             // We need at least two points to create a trail mesh.
-            if ((rHead.index_point + rHead.len_point) > 1)
+            if (rHead.len_point > 1)
             {
 
                 //Vector3 localCamPosition = rHead.space == Space.Self && transform.parent != null ? transform.parent.InverseTransformPoint(cam.transform.position) : cam.transform.position;
@@ -705,6 +742,7 @@ namespace AraJob
 
                 // generate mesh for each trail segment:
                 int start = rHead.index_point;
+                mHeadArray[index] = rHead;
                 for (int i = 0; i < discontinuities.Length; ++i)
                 {
                     UpdateSegmentMesh(mPoints, start, discontinuities[i], rHead.localCamPosition, index);
@@ -714,22 +752,22 @@ namespace AraJob
 
 
 
-                mHeadArray[index] = rHead;
-                //CommitMeshData();
-
-                //RenderMesh(cam);
-
-
-
             }
+            else
+            {
+                mHeadArray[index] = rHead;
+            }
+
         }
 
         private void UpdateSegmentMesh(NativeArray<Point> input, int start, int end, Vector3 localCamPosition, int nIndex)
         {
             Head rHead = mHeadArray[nIndex];
             // Get a list of the actual points to render: either the original, unsmoothed points or the smoothed curve.
-            NativeArray<Point> trail = GetRenderablePoints(input, start, end, nIndex);
+            NativeArray<Point> trail = new NativeArray<Point>(GetRenderablePoints(input, start, end, nIndex), Allocator.Temp);
+            //NativeArray <Point> trail = GetRenderablePoints(input, start, end, nIndex);
             //NativeList<Point> trail = input;
+
 
             NativeList<Vector3> vertices = new NativeList<Vector3>(Allocator.Temp);
             NativeList<Vector4> tangents = new NativeList<Vector4>(Allocator.Temp);
@@ -741,7 +779,7 @@ namespace AraJob
 
 
 
-
+            Debug.Log($"Trail Length: {trail.Length}");
             if (trail.Length > 1)
             {
 
@@ -1038,6 +1076,9 @@ namespace AraJob
             tris.Dispose();
             normals.Dispose();
 
+
+            mHeadArray[nIndex] = rHead;
+
         }
 
         private NativeArray<Point> GetRenderablePoints(NativeArray<Point> input, int start, int end, int index)
@@ -1092,7 +1133,11 @@ namespace AraJob
 
             float lenght = 0;
             for (int i = 0; i < input.Length - 1; ++i)
+            {
+                //var temp = input[i];
+                //var temp1 = input[i+1];
                 lenght += Vector3.Distance(input[i].position, input[i + 1].position);
+            }
             return lenght;
 
         }
