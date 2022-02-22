@@ -57,7 +57,7 @@ namespace AraJob
             GameObject.DontDestroyOnLoad(rGo);
         }
 
-        private List<GraphicNumber> mGraphicNumbers;
+        //private List<GraphicNumber> mGraphicNumbers;
         public List<AraTrailJob> mAraJobList;
         private List<AraTrailJob> mChangeAraJobList;
         private List<EChangeType> mEChangeTypeList;
@@ -119,9 +119,8 @@ namespace AraJob
 
             this.mLateUpdateJobHandle = job.Schedule(this.mHeadList.Length, 16, this.mLateUpdateJobHandle);
             this.mLateUpdateJobHandle.Complete();
-            this.DrawUpdateMeshData();
+            //this.DrawUpdateMeshData();
 
-            
         }
 
         private void OnDestroy()
@@ -202,7 +201,7 @@ namespace AraJob
 
         private void Initialize()
         {
-            this.mGraphicNumbers = new List<GraphicNumber>();
+            //this.mGraphicNumbers = new List<GraphicNumber>();
             this.mAraJobList = new List<AraTrailJob>();
             this.mChangeAraJobList = new List<AraTrailJob>();
             this.mEChangeTypeList = new List<EChangeType>();
@@ -309,7 +308,7 @@ namespace AraJob
                         index_tris = nIndex * GRADIENT_COUNT * VERTICES_SIZE * TRIANGLE_MUL,
                         index_normals = nIndex * GRADIENT_COUNT * VERTICES_SIZE,
                         //length record.
-                        len_point = math.min(POINT_CHUNK_SIZE, rAraTrail.points.Count),
+                        //len_point = math.min(POINT_CHUNK_SIZE, rAraTrail.points.Count),
                         len_lengthCurve = math.min(KEYFRAME_COUNT, rAraTrail.thicknessOverLenght.keys.Length),
                         len_lengthGradientAlpha = math.min(GRADIENT_COUNT, rAraTrail.colorOverLenght.alphaKeys.Length),
                         len_lengthGradientColor = math.min(GRADIENT_COUNT, rAraTrail.colorOverLenght.colorKeys.Length),
@@ -320,22 +319,22 @@ namespace AraJob
                     };
                     this.mHeadList.Add(rHead);
 
-                    GraphicNumber rGraphicNumber = new GraphicNumber();
-                    rGraphicNumber.mesh = rAraTrail.mesh;
-                    rGraphicNumber.materials = new Material[rAraTrail.materials.Length];
-                    for (int j = 0; j < rAraTrail.materials.Length; j++)
-                    {
-                        rGraphicNumber.materials[j] = rAraTrail.materials[j];
-                    }
-                    rGraphicNumber.cam = rAraTrail.tempCamera;
-                    rGraphicNumber.matrix = rAraTrail.space == Space.Self && rAraTrail.transform.parent != null ? rAraTrail.transform.parent.localToWorldMatrix : Matrix4x4.identity;
-                    rGraphicNumber.gameObjectLayer = rAraTrail.gameObject.layer;
-                    rGraphicNumber.castShadows = rAraTrail.castShadows;
-                    rGraphicNumber.receiveShadows = rAraTrail.receiveShadows;
-                    rGraphicNumber.useLightProbes = rAraTrail.useLightProbes;
-                    rGraphicNumber.uvFlowX = rAraTrail.uvFlowX;
-                    rGraphicNumber.uvFlowY = rAraTrail.uvFlowY;
-                    this.mGraphicNumbers.Add(rGraphicNumber);
+                    //GraphicNumber rGraphicNumber = new GraphicNumber();
+                    //rGraphicNumber.mesh = rAraTrail.mesh;
+                    //rGraphicNumber.materials = new Material[rAraTrail.materials.Length];
+                    //for (int j = 0; j < rAraTrail.materials.Length; j++)
+                    //{
+                    //    rGraphicNumber.materials[j] = rAraTrail.materials[j];
+                    //}
+                    //rGraphicNumber.cam = rAraTrail.tempCamera;
+                    //rGraphicNumber.matrix = rAraTrail.space == Space.Self && rAraTrail.transform.parent != null ? rAraTrail.transform.parent.localToWorldMatrix : Matrix4x4.identity;
+                    //rGraphicNumber.gameObjectLayer = rAraTrail.gameObject.layer;
+                    //rGraphicNumber.castShadows = rAraTrail.castShadows;
+                    //rGraphicNumber.receiveShadows = rAraTrail.receiveShadows;
+                    //rGraphicNumber.useLightProbes = rAraTrail.useLightProbes;
+                    //rGraphicNumber.uvFlowX = rAraTrail.uvFlowX;
+                    //rGraphicNumber.uvFlowY = rAraTrail.uvFlowY;
+                    //this.mGraphicNumbers.Add(rGraphicNumber);
 
 
                     if (rAraTrail.thicknessOverLenght.keys.Length >= KEYFRAME_COUNT)
@@ -445,7 +444,7 @@ namespace AraJob
                     int nSwapBackIndex = this.mAraJobList.Count - 1;
                     this.mAraJobList[nIndex] = this.mAraJobList[nSwapBackIndex];
                     this.mAraJobList.RemoveAt(nSwapBackIndex);
-                    this.mGraphicNumbers.RemoveAt(nSwapBackIndex);
+                    //this.mGraphicNumbers.RemoveAt(nSwapBackIndex);
                     //修改索引
                     AraTrailJob.Head rHead = this.mHeadList[nSwapBackIndex];
                     rHead.index_point = nIndex * POINT_CHUNK_SIZE;
@@ -565,13 +564,13 @@ namespace AraJob
                 AraTrailJob araTrail = this.mAraJobList[i];
                 Head rhead = this.mHeadList[i];
 
-
-                araTrail.DrawMeshData(this.vertices.ToArray(), rhead.index_vertices, rhead.len_vertices,
-                    this.normals.ToArray(), rhead.index_normals, rhead.len_normals,
-                    this.tangents.ToArray(), rhead.index_tangents, rhead.len_tangents,
-                    this.vertColors.ToArray(), rhead.index_vertColors, rhead.len_vertColors,
-                    this.uvs.ToArray(), rhead.index_uvs, rhead.len_uvs,
-                    this.tris.ToArray(), rhead.index_tris, rhead.len_tris
+                
+                araTrail.DrawMeshData(this.vertices, rhead.index_vertices, rhead.len_vertices,
+                    this.normals, rhead.index_normals, rhead.len_normals,
+                    this.tangents, rhead.index_tangents, rhead.len_tangents,
+                    this.vertColors, rhead.index_vertColors, rhead.len_vertColors,
+                    this.uvs, rhead.index_uvs, rhead.len_uvs,
+                    this.tris, rhead.index_tris, rhead.len_tris
                     );
             }
 
@@ -779,7 +778,7 @@ namespace AraJob
 
 
 
-            Debug.Log($"Trail Length: {trail.Length}");
+            //Debug.Log($"Trail Length: {trail.Length}  points: {rHead.len_point}");
             if (trail.Length > 1)
             {
 

@@ -793,7 +793,7 @@ namespace Ara{
 
             // Get a list of the actual points to render: either the original, unsmoothed points or the smoothed curve.
             List<Point> trail = GetRenderablePoints(input,start,end);
-
+            //Debug.Log($"Trail Count: {trail.Count}  points: {points.Count}");
             if (trail.Count > 1){
     
                 float lenght = Mathf.Max(GetLenght(trail),epsilon);
