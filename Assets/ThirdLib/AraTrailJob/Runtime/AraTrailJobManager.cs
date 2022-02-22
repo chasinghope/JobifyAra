@@ -396,7 +396,7 @@ namespace AraJob
 
 
                         //Time config color
-                        if (j < rHead.index_lengthGradientAlpha)
+                        if (j < rHead.len_timeGradientAlpha)
                         {
                             this.mTimeGradientAlpha.Add(rAraTrail.colorOverTime.alphaKeys[j]);
                         }
@@ -404,7 +404,7 @@ namespace AraJob
                         {
                             this.mTimeGradientAlpha.Add(new GradientAlphaKey());
                         }
-                        if (j < rHead.len_lengthGradientColor)
+                        if (j < rHead.len_timeGradientColor)
                         {
                             this.mTimeGradientColor.Add(rAraTrail.colorOverTime.colorKeys[j]);
                         }
@@ -586,12 +586,12 @@ namespace AraJob
         [ReadOnly] public NativeList<GradientMode> mTimeModel;
 
 
-        [WriteOnly] public NativeArray<Vector3> Vertices;
-        [WriteOnly] public NativeArray<Vector4> Tangents;
-        [WriteOnly] public NativeArray<Color> VertColors;
-        [WriteOnly] public NativeArray<Vector3> Uvs;
-        [WriteOnly] public NativeArray<int> Tris;
-        [WriteOnly] public NativeArray<Vector3> Normals;
+        public NativeArray<Vector3> Vertices;
+        public NativeArray<Vector4> Tangents;
+        public NativeArray<Color> VertColors;
+        public NativeArray<Vector3> Uvs;
+        public NativeArray<int> Tris;
+        public NativeArray<Vector3> Normals;
 
 
         //vertices;
@@ -630,7 +630,7 @@ namespace AraJob
                     if (rHead.len_point <= 1 || Vector3.Distance(position, mPoints[(rHead.index_point + rHead.len_point) - 2].position) >= rHead.minDistance)
                     {
                         //mPoints.Add(new Point(position, rHead.initialVelocity + rHead.velocity * rHead.inertia, rHead.tangent, rHead.normal, rHead.initialColor, rHead.initialThickness, rHead.time));
-                        Debug.LogError(mPoints.Length);
+                        //Debug.LogError($"{mPoints.Length}   {rHead.index_point + rHead.len_point}");
                         mPoints[rHead.index_point + rHead.len_point] = new Point(position, rHead.initialVelocity + rHead.velocity * rHead.inertia, rHead.tangent, rHead.normal, rHead.initialColor, rHead.initialThickness, rHead.time);
                         rHead.len_point++;
                         rHead.accumTime = 0;
@@ -753,32 +753,32 @@ namespace AraJob
                 NativeList<Keyframe> tKeyFrames = new NativeList<Keyframe>(Allocator.Temp);
 
 
-                for (int j = rHead.index_lengthCurve; j < rHead.len_lengthCurve; j++)
+                for (int j = rHead.index_lengthCurve; j < (rHead.index_lengthCurve + rHead.len_lengthCurve); j++)
                 {
                     lKeyFrames.Add(mLengthThickCurve[j]);
                 }
-                for (int j = rHead.index_lengthGradientColor; j < rHead.len_lengthGradientColor; j++)
+                for (int j = rHead.index_lengthGradientColor; j < (rHead.index_lengthGradientColor + rHead.len_lengthGradientColor); j++)
                 {
                     lColorKeys.Add(mLengthThickColorKeys[j]);
                 }
-                for (int j = rHead.index_lengthGradientAlpha; j < rHead.len_lengthGradientAlpha; j++)
+                for (int j = rHead.index_lengthGradientAlpha; j < (rHead.len_lengthGradientAlpha + rHead.index_lengthGradientAlpha); j++)
                 {
                     lAlphaKeys.Add(mLengthThickAlphaKeys[j]);
                 }
 
-                for (int j = rHead.index_timeCurve; j < rHead.len_timeCurve; j++)
+                for (int j = rHead.index_timeCurve; j < (rHead.len_timeCurve + rHead.index_timeCurve); j++)
                 {
                     tKeyFrames.Add(mTimeThickCurve[j]);
                 }
-                for (int j = rHead.index_timeGradientColor; j < rHead.len_timeGradientColor; j++)
+                for (int j = rHead.index_timeGradientColor; j < (rHead.len_timeGradientColor + rHead.index_timeGradientColor); j++)
                 {
                     tColorKeys.Add(mTimeThickColorKeys[j]);
                 }
-                for (int j = rHead.index_timeGradientAlpha; j < rHead.len_timeGradientAlpha; j++)
+                for (int j = rHead.index_timeGradientAlpha; j < (rHead.len_timeGradientAlpha + rHead.index_timeGradientAlpha); j++)
                 {
                     tAlphaKeys.Add(mTimeThickAlphaKeys[j]);
                 }
-                Debug.LogError($"tColorKeys: {tColorKeys.Length} tAlphaKeys: {tAlphaKeys.Length}");
+                //Debug.LogError($"index_timeGradientColor : {rHead.index_timeGradientColor}  rHead.len_timeGradientColor: {rHead.len_timeGradientColor}  tColorKeys: {tColorKeys.Length} tAlphaKeys: {tAlphaKeys.Length}");
 
                 float lenght = Mathf.Max(GetLenght(trail), 0.00001f);
                 float partialLenght = 0;
