@@ -10,6 +10,7 @@ using UnityEngine.Jobs;
 using static Unity.Mathematics.math;
 using static AraJob.AraTrailJob;
 using UnityEngine.Rendering;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace AraJob
 {
@@ -592,8 +593,8 @@ namespace AraJob
     [BurstCompile]
     public struct UpdateTrailMeshJob : IJobParallelFor
     {
-        [NativeDisableParallelForRestriction] public NativeArray<Head> mHeadArray;
-        [NativeDisableParallelForRestriction] public NativeArray<Point> mPoints;
+        [NativeDisableContainerSafetyRestriction] public NativeArray<Head> mHeadArray;
+        [NativeDisableContainerSafetyRestriction] public NativeArray<Point> mPoints;
 
         //public NativeList<int> discontinuities;
 
@@ -608,12 +609,12 @@ namespace AraJob
         [ReadOnly] public NativeList<GradientMode> mTimeModel;
 
 
-        [NativeDisableParallelForRestriction] public NativeArray<Vector3> Vertices;
-        [NativeDisableParallelForRestriction] public NativeArray<Vector4> Tangents;
-        [NativeDisableParallelForRestriction] public NativeArray<Color> VertColors;
-        [NativeDisableParallelForRestriction] public NativeArray<Vector2> Uvs;
-        [NativeDisableParallelForRestriction] public NativeArray<int> Tris;
-        [NativeDisableParallelForRestriction] public NativeArray<Vector3> Normals;
+        [NativeDisableContainerSafetyRestriction] public NativeArray<Vector3> Vertices;
+        [NativeDisableContainerSafetyRestriction] public NativeArray<Vector4> Tangents;
+        [NativeDisableContainerSafetyRestriction] public NativeArray<Color> VertColors;
+        [NativeDisableContainerSafetyRestriction] public NativeArray<Vector2> Uvs;
+        [NativeDisableContainerSafetyRestriction] public NativeArray<int> Tris;
+        [NativeDisableContainerSafetyRestriction] public NativeArray<Vector3> Normals;
 
 
         public void Execute(int index)
