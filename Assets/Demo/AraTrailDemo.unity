@@ -908,7 +908,7 @@ MonoBehaviour:
   Camera: {fileID: 980096486}
   TrailPrefab: {fileID: 1753415968}
   TrailJobPrefab: {fileID: 695981994}
-  GenerateCount: 5
+  GenerateCount: 3
   ClipPlane: 1000
   Speed: 40
   PosArray: []

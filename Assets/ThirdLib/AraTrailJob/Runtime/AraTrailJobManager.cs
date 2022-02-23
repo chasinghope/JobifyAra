@@ -592,10 +592,8 @@ namespace AraJob
     [BurstCompile]
     public struct UpdateTrailMeshJob : IJobParallelFor
     {
-        [NativeDisableParallelForRestriction]
-        public NativeArray<Head> mHeadArray;
-        [NativeDisableParallelForRestriction]
-        public NativeArray<Point> mPoints;
+        [NativeDisableParallelForRestriction] public NativeArray<Head> mHeadArray;
+        [NativeDisableParallelForRestriction] public NativeArray<Point> mPoints;
 
         //public NativeList<int> discontinuities;
 
@@ -616,15 +614,6 @@ namespace AraJob
         [NativeDisableParallelForRestriction] public NativeArray<Vector2> Uvs;
         [NativeDisableParallelForRestriction] public NativeArray<int> Tris;
         [NativeDisableParallelForRestriction] public NativeArray<Vector3> Normals;
-
-
-        //vertices;
-        //tangents;
-        //NativeList<Color> vertColors;
-        //NativeList<Vector3> uvs;
-        //NativeList<int> tris;
-        //NativeList<Vector3> normals;
-
 
 
         public void Execute(int index)
