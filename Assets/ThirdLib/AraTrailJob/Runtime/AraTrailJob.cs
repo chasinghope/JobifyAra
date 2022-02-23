@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using Unity.Burst;
 using UnityEngine.Jobs;
+using UnityEngine.Rendering;
 
 namespace AraJob
 {
@@ -495,7 +496,7 @@ namespace AraJob
 
         #endregion
 
-
+        
 
 
         #region Origin Methods
@@ -742,7 +743,7 @@ namespace AraJob
 
 
         #endregion
-        
+        //private int[] triangles = new int[AraTrailJobManager.HEAD_SIZE * AraTrailJobManager.POINT_CHUNK_SIZE * AraTrailJobManager.VERTICES_SIZE * AraTrailJobManager.TRIANGLE_MUL];
         public void DrawMeshData(NativeArray<Vector3> vertices, int index_vertices, int len_vertices,
             NativeArray<Vector3> normals, int index_normals, int len_normals,
             NativeArray<Vector4> tangents, int index_tangents, int len_tangents,
@@ -751,13 +752,63 @@ namespace AraJob
             NativeArray<int> tris, int index_tris, int len_tris)
         {
             mesh_.Clear();
-            mesh_.SetVertices(vertices, index_vertices, len_vertices);
-            mesh_.SetNormals(normals, index_normals, len_normals);
-            mesh_.SetTangents(tangents, index_tangents, len_tangents);
-            mesh_.SetColors(vertColors, index_vertColors, len_vertColors);
-            mesh_.SetUVs(0, uvs, index_uvs, len_uvs);
-            mesh_.SetTriangles(tris.ToArray(), index_tris, len_tris, 0, true);
+
+
+
+            mesh_.SetIndexBufferParams(len_tris, IndexFormat.UInt32);
+            mesh_.SetIndexBufferData(tris, index_tris, 0, len_tris, MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices);
+
+            mesh_.SetVertexBufferParams(len_tris, 
+                    new VertexAttributeDescriptor(VertexAttribute.Position, stream: 0), new VertexAttributeDescriptor(VertexAttribute.Normal, stream: 1),
+                    new VertexAttributeDescriptor(VertexAttribute.Tangent, stream: 2),  new VertexAttributeDescriptor(VertexAttribute.Color, stream: 3),
+                    new VertexAttributeDescriptor(VertexAttribute.TexCoord0, stream: 4)
+                   );
+
+            mesh_.SetVertexBufferData(vertices, index_vertices, 0, len_vertices, 0, MeshUpdateFlags.DontRecalculateBounds);
+            mesh_.SetVertexBufferData(normals, index_normals, 0, len_normals, 1, MeshUpdateFlags.DontRecalculateBounds);
+            mesh_.SetVertexBufferData(tangents, index_tangents, 0, len_tangents, 2, MeshUpdateFlags.DontRecalculateBounds);
+            mesh_.SetVertexBufferData(vertColors, index_vertColors, 0, len_vertColors, 3, MeshUpdateFlags.DontRecalculateBounds);
+            mesh_.SetVertexBufferData(uvs, index_uvs, 0, len_uvs, 4, MeshUpdateFlags.DontRecalculateBounds);
+
+
             RenderMesh(tempCamera);
+            //for (int i = 0; i < tris.Length; i++)
+            //{
+            //    triangles[i] = tris[i];
+            //}
+
+            //mesh_.SetVertices(vertices, index_vertices, len_vertices);
+            //mesh_.SetNormals(normals, index_normals, len_normals);
+            //mesh_.SetTangents(tangents, index_tangents, len_tangents);
+            //mesh_.SetColors(vertColors, index_vertColors, len_vertColors);
+            //mesh_.SetUVs(0, uvs, index_uvs, len_uvs);
+            //mesh_.SetTriangles(tris.ToArray(), index_tris, len_tris, 0, true);
+            //RenderMesh(tempCamera);
+
+
+
+            //m_Mesh.SetVertexBufferParams(m_TriangleCount * 3, new VertexAttributeDescriptor(VertexAttribute.Position, stream: 0), new VertexAttributeDescriptor(VertexAttribute.Normal, stream: 1));
+            //m_VertexPos = new NativeArray<Vector3>(m_TriangleCount * 3, Allocator.Persistent);
+            //m_VertexNor = new NativeArray<Vector3>(m_TriangleCount * 3, Allocator.Persistent);
+
+            //m_Mesh.SetIndexBufferParams(m_TriangleCount * 3, IndexFormat.UInt32);
+            //var ib = new NativeArray<int>(m_TriangleCount * 3, Allocator.Temp);
+            //for (var i = 0; i < m_TriangleCount * 3; ++i)
+            //    ib[i] = i;
+            //m_Mesh.SetIndexBufferData(ib, 0, 0, ib.Length, MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices);
+            //ib.Dispose();
+            //var submesh = new SubMeshDescriptor(0, m_TriangleCount * 3, MeshTopology.Triangles);
+            //submesh.bounds = new Bounds(Vector3.zero, new Vector3(10, 10, 10));
+            //m_Mesh.SetSubMesh(0, submesh);
+            //m_Mesh.bounds = submesh.bounds;
+
+            //mesh_.SetVertexBufferData(m_VertexPos, 0, 0, m_VertexPos.Length, 0, MeshUpdateFlags.DontRecalculateBounds);
+            //mesh_.SetVertexBufferData(m_VertexNor, 0, 0, m_VertexNor.Length, 1, MeshUpdateFlags.DontRecalculateBounds);
+
+
+
+
+
         }
 
 

@@ -1074,7 +1074,7 @@ namespace AraJob
         public NativeList<Vector3> verticesNative;
         public NativeList<Vector4> tangentsNative;
         public NativeList<Color> vertColorsNative;
-        public NativeList<Vector3> uvsNative;
+        public NativeList<Vector2> uvsNative;
         public NativeList<int> trisNative;
         public NativeList<Vector3> normalsNative;
 
@@ -1104,7 +1104,7 @@ namespace AraJob
             this.verticesNative = new NativeList<Vector3>(Allocator.Persistent);
             this.tangentsNative = new NativeList<Vector4>(Allocator.Persistent);
             this.vertColorsNative = new NativeList<Color>(Allocator.Persistent);
-            this.uvsNative = new NativeList<Vector3>(Allocator.Persistent);
+            this.uvsNative = new NativeList<Vector2>(Allocator.Persistent);
             this.trisNative = new NativeList<int>(Allocator.Persistent);
             this.normalsNative = new NativeList<Vector3>(Allocator.Persistent);
 
@@ -1421,11 +1421,11 @@ namespace AraJob
 
             OutputJobResult();
             this.mesh_.Clear();
-            mesh_.SetVertices(verticesNative.ToArray());
-            mesh_.SetNormals(normalsNative.ToArray());
-            mesh_.SetTangents(tangentsNative.ToArray());
-            mesh_.SetColors(vertColorsNative.ToArray());
-            mesh_.SetUVs(0, uvsNative.ToArray());
+            mesh_.SetVertices<Vector3>(verticesNative);
+            mesh_.SetNormals<Vector3>(normalsNative);
+            mesh_.SetTangents<Vector4>(tangentsNative);
+            mesh_.SetColors<Color>(vertColorsNative);
+            mesh_.SetUVs<Vector2>(0, uvsNative);
             mesh_.SetTriangles(trisNative.ToArray(), 0, true);
             RenderMesh(this.tempCamera);
         }
@@ -1481,33 +1481,33 @@ namespace AraJob
             public int cornerRoundness;
             public float thickness;
 
-            public int len_point;
-            public int len_lengthCurve;
-            public int len_lengthGradientColor;
-            public int len_lengthGradientAlpha;
-            public int len_timeCurve;
-            public int len_timeGradientColor;
-            public int len_timeGradientAlpha;
-            public int len_vertices;
-            public int len_tangents;
-            public int len_vertColors;
-            public int len_uvs;
-            public int len_tris;
-            public int len_normals;
+            //public int len_point;
+            //public int len_lengthCurve;
+            //public int len_lengthGradientColor;
+            //public int len_lengthGradientAlpha;
+            //public int len_timeCurve;
+            //public int len_timeGradientColor;
+            //public int len_timeGradientAlpha;
+            //public int len_vertices;
+            //public int len_tangents;
+            //public int len_vertColors;
+            //public int len_uvs;
+            //public int len_tris;
+            //public int len_normals;
 
-            public int index_point;
-            public int index_lengthCurve;
-            public int index_lengthGradientColor;
-            public int index_lengthGradientAlpha;
-            public int index_timeCurve;
-            public int index_timeGradientColor;
-            public int index_timeGradientAlpha;
-            public int index_vertices;
-            public int index_tangents;
-            public int index_vertColors;
-            public int index_uvs;
-            public int index_tris;
-            public int index_normals;
+            //public int index_point;
+            //public int index_lengthCurve;
+            //public int index_lengthGradientColor;
+            //public int index_lengthGradientAlpha;
+            //public int index_timeCurve;
+            //public int index_timeGradientColor;
+            //public int index_timeGradientAlpha;
+            //public int index_vertices;
+            //public int index_tangents;
+            //public int index_vertColors;
+            //public int index_uvs;
+            //public int index_tris;
+            //public int index_normals;
 
 
         }
@@ -2596,7 +2596,7 @@ namespace AraJob
             public NativeList<Vector3> vertices;
             public NativeList<Vector4> tangents;
             public NativeList<Color> vertColors;
-            public NativeList<Vector3> uvs;
+            public NativeList<Vector2> uvs;
             public NativeList<int> tris;
             public NativeList<Vector3> normals;
 

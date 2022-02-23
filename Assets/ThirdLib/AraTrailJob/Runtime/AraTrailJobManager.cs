@@ -117,9 +117,9 @@ namespace AraJob
                 Normals = this.normals
             };
 
-            this.mLateUpdateJobHandle = job.Schedule(this.mHeadList.Length, 16, this.mLateUpdateJobHandle);
+            this.mLateUpdateJobHandle = job.Schedule(this.mHeadList.Length, 1, this.mLateUpdateJobHandle);
             this.mLateUpdateJobHandle.Complete();
-            //this.DrawUpdateMeshData();
+            this.DrawUpdateMeshData();
 
         }
 
@@ -592,6 +592,7 @@ namespace AraJob
     [BurstCompile]
     public struct UpdateTrailMeshJob : IJobParallelFor
     {
+        [NativeDisableParallelForRestriction]
         public NativeArray<Head> mHeadArray;
         [NativeDisableParallelForRestriction]
         public NativeArray<Point> mPoints;
