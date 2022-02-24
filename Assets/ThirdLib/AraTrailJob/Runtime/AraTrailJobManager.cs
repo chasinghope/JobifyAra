@@ -11,6 +11,7 @@ using static Unity.Mathematics.math;
 using static AraJob.AraTrailJob;
 using UnityEngine.Rendering;
 using Unity.Collections.LowLevel.Unsafe;
+using System.Text;
 
 namespace AraJob
 {
@@ -437,7 +438,7 @@ namespace AraJob
 
                 if(rEChangeType == EChangeType.Remove)
                 {
-                    if (nIndex != -1)
+                    if (nIndex == -1)
                     {
                         Debug.LogError($"AraTrail dose not existed. AraTrail:{rAraTrail.name}");
                         continue;
@@ -522,6 +523,12 @@ namespace AraJob
                 rHead.tangent = this.mAraJobList[i].transform.right;
                 rHead.normal = this.mAraJobList[i].transform.forward;
                 rHead.up = this.mAraJobList[i].transform.up;
+                rHead.DeltaTime = this.mAraJobList[i].DeltaTime;
+                //rHead.prevPosition = this.mAraJobList[i].prevPosition;
+                //rHead.velocity = this.mAraJobList[i].velocity;
+                //rHead.speed = this.mAraJobList[i].speed;
+                //rHead.accumTime = this.mAraJobList[i].accumTime;
+
                 this.mHeadList[i] = rHead;
             }
         }
@@ -565,7 +572,12 @@ namespace AraJob
                 AraTrailJob araTrail = this.mAraJobList[i];
                 Head rhead = this.mHeadList[i];
 
-                
+
+                //this.mAraJobList[i].prevPosition = rhead.prevPosition;
+                //this.mAraJobList[i].velocity = rhead.velocity;
+                //this.mAraJobList[i].speed = rhead.speed;
+                //this.mAraJobList[i].accumTime = rhead.accumTime;
+
                 araTrail.DrawMeshData(this.vertices, rhead.index_vertices, rhead.len_vertices,
                     this.normals, rhead.index_normals, rhead.len_normals,
                     this.tangents, rhead.index_tangents, rhead.len_tangents,
@@ -573,6 +585,13 @@ namespace AraJob
                     this.uvs, rhead.index_uvs, rhead.len_uvs,
                     this.tris, rhead.index_tris, rhead.len_tris
                     );
+
+                StringBuilder str = new StringBuilder();
+                for (int j = rhead.index_point; j < (rhead.index_point + rhead.len_point); j++)
+                {
+                    str.AppendLine(mPoints[j].position.ToString());
+                }
+                Debug.Log("bbbbbb" + str);
             }
 
         }

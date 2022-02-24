@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using Unity.Burst;
 using UnityEngine.Jobs;
+using System.Text;
 
 namespace AraJob
 {
@@ -1427,6 +1428,14 @@ namespace AraJob
             mesh_.SetColors<Color>(vertColorsNative);
             mesh_.SetUVs<Vector2>(0, uvsNative);
             mesh_.SetTriangles(trisNative.ToArray(), 0, true);
+
+            StringBuilder str = new StringBuilder();
+            for (int j = 0; j < mPointList.Length; j++)
+            {
+                str.AppendLine(mPointList[j].position.ToString());
+            }
+            Debug.Log("TTTTTTT" + str);
+
             RenderMesh(this.tempCamera);
         }
 
