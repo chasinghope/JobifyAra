@@ -311,17 +311,17 @@ namespace AraJob
         private List<int> discontinuities = new List<int>();
 
         private Mesh mesh_;
-        public Vector3 velocity = Vector3.zero;
-        public Vector3 prevPosition;
-        public float speed = 0;
-        public float accumTime = 0;
+        [HideInInspector] public Vector3 velocity = Vector3.zero;
+        [HideInInspector] public Vector3 prevPosition;
+        [HideInInspector] public float speed = 0;
+        [HideInInspector] public float accumTime = 0;
 
-        public List<Vector3> vertices = new List<Vector3>();
-        public List<Vector3> normals = new List<Vector3>();
-        public List<Vector4> tangents = new List<Vector4>();
-        public List<Vector2> uvs = new List<Vector2>();
-        public List<Color> vertColors = new List<Color>();
-        public List<int> tris = new List<int>();
+        [HideInInspector] public List<Vector3> vertices = new List<Vector3>();
+        [HideInInspector] public List<Vector3> normals = new List<Vector3>();
+        [HideInInspector] public List<Vector4> tangents = new List<Vector4>();
+        [HideInInspector] public List<Vector2> uvs = new List<Vector2>();
+        [HideInInspector] public List<Color> vertColors = new List<Color>();
+        [HideInInspector] public List<int> tris = new List<int>();
 
 
         [BurstCompile]
@@ -411,7 +411,7 @@ namespace AraJob
         }
 
 
-        private Camera mainCamera;
+        [HideInInspector] private Camera mainCamera;
 
         #region Unity Mono
 

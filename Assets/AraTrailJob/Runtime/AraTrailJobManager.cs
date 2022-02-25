@@ -434,19 +434,29 @@ namespace AraJob
                     rHead.index_timeCurve = nIndex * KEYFRAME_COUNT;
                     rHead.index_timeGradientAlpha = nIndex * GRADIENT_COUNT;
                     rHead.index_timeGradientColor = nIndex * GRADIENT_COUNT;
+                    rHead.index_vertices = nIndex * GRADIENT_COUNT * VERTICES_SIZE;
+                    rHead.index_tangents = nIndex * GRADIENT_COUNT * VERTICES_SIZE;
+                    rHead.index_vertColors = nIndex * GRADIENT_COUNT * VERTICES_SIZE;
+                    rHead.index_uvs = nIndex * GRADIENT_COUNT * VERTICES_SIZE;
+                    rHead.index_tris = nIndex * GRADIENT_COUNT * VERTICES_SIZE * TRIANGLE_MUL;
+                    rHead.index_normals = nIndex * GRADIENT_COUNT * VERTICES_SIZE;
                     this.mHeadList[nSwapBackIndex] = rHead;
-                    
+
                     //删除NativeContainers元素
                     this.mHeadList.RemoveAtSwapBack(nIndex);
                     this.mLengthGradientMode.RemoveAtSwapBack(nIndex);
                     this.mTimeGradientMode.RemoveAtSwapBack(nIndex);
-                    for (int j = (nIndex + 1) * KEYFRAME_COUNT - 1; j >= nIndex * POINT_CHUNK_SIZE; j--)
+
+
+
+
+                    for (int j = (nIndex + 1) * KEYFRAME_COUNT - 1; j >= nIndex * KEYFRAME_COUNT; j--)
                     {
                         this.mTimeCurve.RemoveAtSwapBack(j);
                         this.mLengthCurve.RemoveAtSwapBack(j);
                     }
 
-                    for (int j = (nIndex + 1) * GRADIENT_COUNT - 1; j >= nIndex * POINT_CHUNK_SIZE; j--)
+                    for (int j = (nIndex + 1) * GRADIENT_COUNT - 1; j >= nIndex * GRADIENT_COUNT; j--)
                     {
                         this.mLengthGradientAlpha.RemoveAtSwapBack(j);
                         this.mLengthGradientColor.RemoveAtSwapBack(j);
@@ -473,17 +483,6 @@ namespace AraJob
                         this.tris.RemoveAtSwapBack(j);
                     }
 
-                    Debug.Assert(this.mHeadList.Length == this.mAraJobList.Count);
-                    Debug.Assert(this.mLengthGradientMode.Length == this.mAraJobList.Count);
-                    Debug.Assert(this.mTimeGradientMode.Length == this.mAraJobList.Count);
-                    Debug.Assert(this.mLengthGradientAlpha.Length == this.mAraJobList.Count * GRADIENT_COUNT);
-                    Debug.Assert(this.mLengthGradientColor.Length == this.mAraJobList.Count * GRADIENT_COUNT);
-                    Debug.Assert(this.mTimeGradientAlpha.Length == this.mAraJobList.Count * GRADIENT_COUNT);
-                    Debug.Assert(this.mTimeGradientColor.Length == this.mAraJobList.Count * GRADIENT_COUNT);
-                    Debug.Assert(this.mTimeCurve.Length == this.mAraJobList.Count * KEYFRAME_COUNT);
-                    Debug.Assert(this.mLengthCurve.Length == this.mAraJobList.Count * KEYFRAME_COUNT);
-
-
                 }
 
             }
@@ -502,11 +501,6 @@ namespace AraJob
                 rHead.normal = this.mAraJobList[i].transform.forward;
                 rHead.up = this.mAraJobList[i].transform.up;
                 rHead.DeltaTime = this.mAraJobList[i].DeltaTime;
-                //rHead.prevPosition = this.mAraJobList[i].prevPosition;
-                //rHead.velocity = this.mAraJobList[i].velocity;
-                //rHead.speed = this.mAraJobList[i].speed;
-                //rHead.accumTime = this.mAraJobList[i].accumTime;
-
                 this.mHeadList[i] = rHead;
             }
         }
