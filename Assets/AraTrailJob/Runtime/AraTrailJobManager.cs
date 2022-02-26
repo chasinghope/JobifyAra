@@ -21,7 +21,7 @@ namespace AraJob
 
         public const int HEAD_SIZE = 100;
         public const int POINT_CHUNK_SIZE = 400;
-        public const int VERTICES_SIZE = 526;
+        public const int VERTICES_SIZE = 100;
         public const int TRIANGLE_MUL = 3;
         public const int GRADIENT_COUNT = 8;
         public const int KEYFRAME_COUNT = 16;
@@ -87,6 +87,7 @@ namespace AraJob
         {
             mInstance = this;
             this.Initialize();
+            this.Pretreatment();
         }
 
         private void LateUpdate()
@@ -224,6 +225,26 @@ namespace AraJob
             this.tris = new NativeList<int>(HEAD_SIZE * POINT_CHUNK_SIZE * VERTICES_SIZE * TRIANGLE_MUL, Allocator.Persistent);
             this.normals = new NativeList<Vector3>(HEAD_SIZE * POINT_CHUNK_SIZE * VERTICES_SIZE, Allocator.Persistent);
         }
+
+        private void Pretreatment()
+        {
+            for (int i = 0; i < HEAD_SIZE; i++)
+            {
+                for (int j = 0; j < POINT_CHUNK_SIZE * VERTICES_SIZE; j++)
+                {
+                    this.vertices.Add(new Vector3());
+                    this.tangents.Add(new Vector4());
+                    this.vertColors.Add(new Color());
+                    this.uvs.Add(new Vector3());
+                    for (int k = 0; k < TRIANGLE_MUL; k++)
+                    {
+                        this.tris.Add(0);
+                    }
+                    this.normals.Add(new Vector3());
+                }
+            }
+        }
+
 
         public void OnEnter(AraTrailJob rAraTrailJob)
         {
@@ -400,18 +421,6 @@ namespace AraJob
                         this.mPoints.Add(new Point());
                     }
 
-                    for(int j = 0; j < POINT_CHUNK_SIZE * VERTICES_SIZE; j++)
-                    {
-                        this.vertices.Add(new Vector3());
-                        this.tangents.Add(new Vector4());
-                        this.vertColors.Add(new Color());
-                        this.uvs.Add(new Vector3());
-                        for (int k = 0; k < TRIANGLE_MUL; k++)
-                        {
-                            this.tris.Add(0);
-                        }
-                        this.normals.Add(new Vector3());
-                    }
                 }
 
                 if(rEChangeType == EChangeType.Remove)
@@ -468,26 +477,12 @@ namespace AraJob
                     {
                         this.mPoints.RemoveAtSwapBack(j);
                     }
-
-                    for (int j = (nIndex + 1) * POINT_CHUNK_SIZE * VERTICES_SIZE - 1; j >= nIndex * POINT_CHUNK_SIZE * VERTICES_SIZE; j--)
-                    {
-                        this.vertices.RemoveAtSwapBack(j);
-                        this.vertColors.RemoveAtSwapBack(j);
-                        this.tangents.RemoveAtSwapBack(j);
-                        this.uvs.RemoveAtSwapBack(j);
-                        this.normals.RemoveAtSwapBack(j);
-                    }
-
-                    for (int j = (nIndex + 1) * POINT_CHUNK_SIZE * VERTICES_SIZE * TRIANGLE_MUL - 1; j >= nIndex * POINT_CHUNK_SIZE * VERTICES_SIZE * TRIANGLE_MUL; j--)
-                    {
-                        this.tris.RemoveAtSwapBack(j);
-                    }
-
                 }
 
             }
             this.mChangeAraJobList.Clear();
             this.mEChangeTypeList.Clear();
+
         }
 
         private void UpdateJobsData()
