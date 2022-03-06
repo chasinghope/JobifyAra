@@ -1,0 +1,17 @@
+{
+    "name": "AraTrailJob.Editor",
+    "references": [
+        "GUID:29d2851ce9ed5d34bb50894c315304a6"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

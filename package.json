@@ -1,0 +1,33 @@
+{
+  "name": "com.lmdgame.groundzero.aratrailjob",
+  "version": "1.0.0",
+  "displayName": "AraTrailJob",
+  "description": "This is an AraTrailjob package",
+  "unity": "2019.4",
+  "unityRelease": "3f1",
+  "documentationUrl": "",
+  "changelogUrl": "",
+  "licensesUrl": "",
+  "dependencies": {
+    "com.unity.burst": "1.4.2",
+    "com.unity.collections": "0.9.0-preview.6",
+    "com.unity.mathematics": "1.2.1"
+  },
+  "keywords": [
+    "AraTrail",
+    "Job",
+    "AraTrailjobJob"
+  ],
+  "author": {
+    "name": "example",
+    "email": "example@example.com",
+    "url": "https://www.example.com"
+  },
+  "samples": [
+    {
+      "displayName": "AraTrailjob Sample",
+      "description": "Import AraTrailjobSample.unitypackage to see basic setup and usage of AraTrailjob.",
+      "path": "Samples~/AraTrailjobSample"
+    }
+  ]
+}
