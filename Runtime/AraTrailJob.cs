@@ -735,6 +735,8 @@ namespace AraJob
             NativeArray<Vector2> uvs, int index_uvs, int len_uvs,
             NativeArray<int> tris, int index_tris, int len_tris)
         {
+            if( mesh_ == null )
+                return;
             mesh_.Clear();
 
             mesh_.SetVertices(vertices, index_vertices, len_vertices);
