@@ -455,7 +455,7 @@ namespace AraJob
                 tempCamera = Camera.main;
 #endif
 
-            AraTrailJobManager.Instance.OnEnter(this);
+            AraTrailJobManager.Instance?.OnEnter(this);
         }
 
 
@@ -464,7 +464,7 @@ namespace AraJob
         {
             points.Clear();
 
-            AraTrailJobManager.Instance.OnExit(this);
+            AraTrailJobManager.Instance?.OnExit(this);
             DestroyImmediate(mesh_);
             DestoryTrailGoc();
         }
