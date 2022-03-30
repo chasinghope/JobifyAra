@@ -60,6 +60,7 @@ namespace AraJob
         public static void Release()
         {
             GameObject.Destroy(Instance.gameObject);
+            mInstance = null;
         }
 
         public List<AraTrailJob> mAraJobList;
