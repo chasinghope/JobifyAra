@@ -98,6 +98,9 @@ namespace AraJob
 
         private void LateUpdate()
         {
+            this.mLateUpdateJobHandle.Complete();
+            this.DrawUpdateMeshData();
+            
             this.HandleChangeList();
             this.UpdateJobsData();
 
@@ -123,8 +126,7 @@ namespace AraJob
             };
 
             this.mLateUpdateJobHandle = job.Schedule(this.mHeadList.Length, 1, this.mLateUpdateJobHandle);
-            this.mLateUpdateJobHandle.Complete();
-            this.DrawUpdateMeshData();
+
 
         }
 
